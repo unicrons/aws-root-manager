@@ -6,7 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var accountsFlags []string
+var (
+	accountsFlags []string
+	outputFlag    string
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "aws-root-manager",
@@ -32,4 +35,5 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "table", "Set the output format (table, json, csv)")
 }
