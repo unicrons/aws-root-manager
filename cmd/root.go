@@ -21,7 +21,7 @@ This tool allows you to:
 
 ✨ More features coming soon!
 
-🚀 Made with ❤️ by unicrons.cloud`,
+Made with ❤️ by unicrons.cloud 🦄`,
 }
 
 func Execute() {

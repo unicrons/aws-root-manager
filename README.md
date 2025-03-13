@@ -2,7 +2,6 @@
 
 A CLI tool for managing [AWS Centralized Root Access](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-enable-root-access.html).
 
-
 ## Overview
 
 This tool enables AWS Organization administrators to manage centralized root access, allowing you to:
@@ -10,7 +9,6 @@ This tool enables AWS Organization administrators to manage centralized root acc
 - 🔒 Enable Centralized Root Access for better security and control.
 - 📊 Audit root access status across all organization accounts.
 - 🗑️ Delete root credentials to enforce security best practices.
-
 
 ## Features
 
@@ -43,7 +41,6 @@ Something missing? Open us a feature request!
   iam:EnableOrganizationsRootSessions (required only when working with resource policies)
   organizations:EnableAwsServiceAccess
   ```
-
 
 ## How to use it
 
@@ -109,11 +106,11 @@ Available Commands:
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
-
 ## References
 
 - [AWS Organizations Documentation](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html)
 - [AWS Centralized Root Access Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-enable-root-access.html)
 
+---
 
 Made with ❤️ by unicrons.cloud 🦄
