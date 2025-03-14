@@ -84,13 +84,13 @@ var deleteMfaCmd = &cobra.Command{
 	},
 }
 
-var deleteCertificateCmd = &cobra.Command{
-	Use:          "certificate",
+var deleteCertificatesCmd = &cobra.Command{
+	Use:          "certificates",
 	Short:        "Delete root user Signin Certificates",
 	Long:         `Delete existing root user Signing Certificates for specific AWS Organization member accounts.`,
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Trace("cmd.deleteCertificate", "delete certificate called")
+		logger.Trace("cmd.deleteCertificates", "delete certificates called")
 
 		if err := delete(accountsFlags, "certificate"); err != nil {
 			return err
@@ -106,7 +106,7 @@ func init() {
 	deleteCmd.AddCommand(deleteLoginCmd)
 	deleteCmd.AddCommand(deleteKeysCmd)
 	deleteCmd.AddCommand(deleteMfaCmd)
-	deleteCmd.AddCommand(deleteCertificateCmd)
+	deleteCmd.AddCommand(deleteCertificatesCmd)
 	deleteCmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of AWS account IDs to audit (comma-separated). Use \"all\" to audit all accounts.")
 }
 
