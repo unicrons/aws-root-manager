@@ -1,5 +1,5 @@
 <p align="center">
-  <img align="center" src="./imgs/aws-root-manager.jpg" width="13%" height="13%">
+  <img align="center" src="./img/aws-root-manager.jpg" width="13%" height="13%">
 </p>
 
 # AWS Root Manager
@@ -13,6 +13,8 @@ This tool enables AWS Organization administrators to manage centralized root acc
 - 🔒 Enable Centralized Root Access for better security and control.
 - 📊 Audit root access status across all organization accounts.
 - 🗑️ Delete root credentials to enforce security best practices.
+
+![](./img/demo.gif)
 
 ## Features
 
@@ -75,38 +77,44 @@ Flags:
   -o, --output string   Set the output format (table, json, csv) (default "table")
 ```
 
-## Examples
+### Examples
 
 Get available root credentials for all member accounts in your AWS Organizations:
 ```bash
-./aws-root-manager audit --accounts all
+aws-root-manager audit --accounts all
 ```
+![](./img/demo-audit-all.png)
 
-Get available root access keys for accounts `111111111111` and `222222222222`:
+Get available root credentials for accounts `456789123454` and `567891234565` in `csv`:
 ```bash
-./aws-root-manager audit --accounts 111111111111,222222222222
+aws-root-manager audit --accounts 456789123454,567891234565 --output csv
 ```
-
-Check if centralized root access is enabled:
-```bash
-./aws-root-manager check
-```
-
+![](./img/demo-audit-csv.png)
 
 Delete all organization member accounts root credentials:
 ```bash
-./aws-root-manager delete all --accounts all
+aws-root-manager delete all --accounts all
 ```
+<img src="./img/demo-delete-all.png" width="286" height="150">
 
-Delete root login profile for account `123456789012`:
+Delete root login profile for account `234567891232`:
 ```bash
-./aws-root-manager delete login --accounts 123456789012
+aws-root-manager delete login --accounts 234567891232
 ```
+<img src="./img/demo-delete-login.png" width="328" height="80">
+
+Check if centralized root access is enabled:
+```bash
+aws-root-manager check
+```
+<img src="./img/demo-check.png" width="327" height="150">
 
 Enable centralized root access:
 ```bash
 ./aws-root-manager enable
 ```
+<img src="./img/demo-enable.png" width="521" height="150">
+
 
 ### Logger
 
