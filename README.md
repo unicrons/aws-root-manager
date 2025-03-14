@@ -1,3 +1,7 @@
+<p align="center">
+  <img align="center" src="./imgs/aws-root-manager.jpg" width="13%" height="13%">
+</p>
+
 # AWS Root Manager
 
 A CLI tool for easily manage [AWS Centralized Root Access](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-enable-root-access.html).
