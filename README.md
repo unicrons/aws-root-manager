@@ -22,10 +22,10 @@ This tool enables AWS Organization administrators to manage centralized root acc
   - Access keys.
   - MFA devices.
   - Signing certificates.
-- **Enable**: Enable centralized root access.
 - **Check**: Verify centralized root access settings.
+- **Enable**: Enable centralized root access.
 
-Something missing? Open us a [feature request](https://github.com/unicrons/aws-root-manager/issues/new/choose)!
+Something missing? Open us a [feature request](https://github.com/unicrons/aws-root-manager/issues/new?template=feature_request.md)!
 
 ## Requirements
 
@@ -67,10 +67,12 @@ Usage:
 Available Commands:
   audit       Retrieve root credentials
   check       Check if centralized root access is enabled.
-  completion  Generate the autocompletion script for the specified shell
   delete      Delete root credentials
   enable      Enable centralized root access
-  help        Help about any command
+
+Flags:
+  -h, --help            help for aws-root-manager
+  -o, --output string   Set the output format (table, json, csv) (default "table")
 ```
 
 ## Examples
