@@ -108,6 +108,13 @@ Enable centralized root access:
 ./aws-root-manager enable
 ```
 
+### Logger
+
+The tool uses a logger that, by default, is set to `INFO` level and outputs logs in `text` format. You can customize the logging behavior using environment variables:
+
+- `LOG_LEVEL`: Available options are `trace`, `debug`, `info`, `warn` and `error`. Default: `info`.
+- `LOG_FORMAT`: Available options are `text` and `json`. Default: `text`.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.

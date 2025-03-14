@@ -9,15 +9,28 @@ import (
 func init() {
 	lvl, ok := os.LookupEnv("LOG_LEVEL")
 	if !ok {
-		return
+		lvl = "error" // default
 	}
 
 	ll, err := log.ParseLevel(lvl)
 	if err != nil {
 		ll = log.DebugLevel
 	}
-
 	log.SetLevel(ll)
+
+	format, ok := os.LookupEnv("LOG_FORMAT")
+	if ok {
+		SetLoggerFormat(format)
+	}
+}
+
+func SetLoggerFormat(logFormat string) {
+	switch logFormat {
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{})
+	default:
+		log.SetFormatter(&log.TextFormatter{})
+	}
 }
 
 // Wrap logrus with function name
