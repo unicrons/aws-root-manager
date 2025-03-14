@@ -13,13 +13,17 @@ builds:
     goarch:
       - amd64
       - arm64
+    ldflags:
+      '-s -w -X github.com/unicrons/{{ .ProjectName }}/cmd.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}'
 
 archives:
-  - format: zip
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - zip
     format_overrides:
-    - goos: linux
-      format: tar.gz
+      - goos: linux
+        formats:
+          - tar.gz
 
 changelog:
   sort: asc
