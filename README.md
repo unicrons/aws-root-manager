@@ -24,15 +24,17 @@ This tool enables AWS Organization administrators to manage centralized root acc
   - Access keys.
   - MFA devices.
   - Signing certificates.
+  - S3 bucket policies *(coming soon)*.
+  - SQS policies *(coming soon)*.
 - **Check**: Verify centralized root access settings.
 - **Enable**: Enable centralized root access.
+- **Recovery**: Allow root password recovery *(coming soon)*.
 
 Something missing? Open us a [feature request](https://github.com/unicrons/aws-root-manager/issues/new?template=feature_request.md)!
 
 ## Requirements
 
-- AWS Organization management account access.
-- AWS CLI configured with appropriate credentials.
+- Access to an AWS Organization **management** account from your terminal.
 - The following IAM permissions:
   ```
   iam:ListOrganizationsFeatures
@@ -41,7 +43,7 @@ Something missing? Open us a [feature request](https://github.com/unicrons/aws-r
   sts:AssumeRoot
   ```
 
-  Additionally, if the centralized root access feature is not enabled, the following permissions are required to enable it:
+  Additionally, if the **centralized root access** feature is not enabled, the following permissions are required to enable it:
   ```
   iam:EnableOrganizationsRootCredentialsManagement
   iam:EnableOrganizationsRootSessions (required only when working with resource policies)
@@ -134,4 +136,4 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ---
 
-Made with ❤️ by unicrons.cloud 🦄
+Made with ❤️ by [unicrons.cloud](https://unicrons.cloud/en/about_us/) 🦄
