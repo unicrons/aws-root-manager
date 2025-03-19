@@ -5,29 +5,34 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/charmbracelet/x/term"
 )
 
 var (
 	baseStyle = lipgloss.NewStyle().
 			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("240"))
+			BorderForeground(lipgloss.Color("8")) // Gray
+	headerStyle = lipgloss.NewStyle().
+			Padding(0, 1).
+			Bold(true).
+			BorderStyle(baseStyle.GetBorderStyle()).
+			BorderBottom(true).
+			BorderForeground(baseStyle.GetBorderBottomForeground())
+	rowStyle = lipgloss.NewStyle().
+			Padding(0, 1)
 	greenStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // Green
 	redStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("1")) // Red
 )
 
 func printTable(headers []string, data [][]any) {
-	termWidth := getTerminalWidth()
-	maxColWidth := termWidth / len(headers)
-
 	// Convert data to table rows
-	rows := make([]table.Row, len(data))
+	rows := make([][]string, len(data))
 	for i, row := range data {
 		formattedRow := make([]string, len(row))
 		for j, cell := range row {
-			// Apply formatting based on the type of the cell
+			// Apply cell data formatting based on the type of data
 			switch v := cell.(type) {
 			case bool:
 				formattedRow[j] = formatBool(v)
@@ -40,7 +45,7 @@ func printTable(headers []string, data [][]any) {
 		rows[i] = formattedRow
 	}
 
-	// Calculate max width for each column
+	// Calculate max width
 	columnWidths := make([]int, len(headers))
 	for i, header := range headers {
 		columnWidths[i] = len(header)
@@ -54,40 +59,32 @@ func printTable(headers []string, data [][]any) {
 		}
 	}
 
-	// Create table columns with the adjusted widths
-	columns := make([]table.Column, len(headers))
-	for i, header := range headers {
-		columns[i] = table.Column{
-			Title: header,
-			Width: min(columnWidths[i], maxColWidth),
-		}
+	totalWidth := 0
+	for _, width := range columnWidths {
+		totalWidth += width
 	}
 
-	// Customize the table styles
-	style := table.Styles{
-		Header: lipgloss.NewStyle().
-			Padding(0, 1).
-			Bold(true).
-			BorderStyle(baseStyle.GetBorderStyle()).
-			BorderBottom(true).
-			BorderForeground(baseStyle.GetBorderBottomForeground()).
-			MaxWidth(maxColWidth),
-		Cell: lipgloss.NewStyle().
-			Padding(0, 1).
-			MaxWidth(maxColWidth),
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("240"))).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			switch {
+			case row == table.HeaderRow:
+				return headerStyle
+			default:
+				return rowStyle
+			}
+		}).
+		Headers(headers...).
+		Rows(rows...)
+
+	terminalWidth := getTerminalWidth()
+	if totalWidth > terminalWidth {
+		t.Width(terminalWidth)
 	}
 
-	// Create the table model
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithHeight(len(rows)+1),
-		table.WithStyles(style),
-	)
-
-	// Render the table
-	output := baseStyle.Render(t.View())
-	fmt.Println(output)
+	// Print the table
+	fmt.Println(t)
 }
 
 // Format string array values returning "not present" if empty
