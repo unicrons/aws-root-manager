@@ -7,13 +7,11 @@ import (
 	"github.com/unicrons/aws-root-manager/pkg/logger"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 )
 
-const ROOT_POLICY_PREFIX = "arn:aws:iam::aws:policy/root-task/"
+const rootPolicyPrefix = "arn:aws:iam::aws:policy/root-task/"
 
 type StsClient struct {
 	client *sts.Client
@@ -27,20 +25,20 @@ func NewStsClient(awscfg aws.Config) *StsClient {
 func (c *StsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPolicyName string) (aws.Config, error) {
 	logger.Trace("aws.GetAssumeRootConfig", "getting root aws.config account %s and task %s", accountId, taskPolicyName)
 
-	creds, err := c.assumeRoot(ctx, accountId, taskPolicyName)
+	stsCreds, err := c.assumeRoot(ctx, accountId, taskPolicyName)
 	if err != nil {
 		return aws.Config{}, err
 	}
 
-	awsrootcfg, err := config.LoadDefaultConfig(ctx,
-		config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				*creds.AccessKeyId,
-				*creds.SecretAccessKey,
-				*creds.SessionToken,
-			),
-		),
-	)
+	// Convert sts.Credentials to aws.Credentials
+	awsCreds := aws.Credentials{
+		AccessKeyID:     aws.ToString(stsCreds.AccessKeyId),
+		SecretAccessKey: aws.ToString(stsCreds.SecretAccessKey),
+		SessionToken:    aws.ToString(stsCreds.SessionToken),
+	}
+
+	awsrootcfg, err := LoadAWSConfig(ctx, WithCredentials(&awsCreds))
+
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("error loading aws root config: %s", err)
 	}
@@ -56,7 +54,7 @@ func (c *StsClient) assumeRoot(ctx context.Context, accountId, taskPolicyName st
 	params := &sts.AssumeRootInput{
 		TargetPrincipal: aws.String(accountId),
 		TaskPolicyArn: &types.PolicyDescriptorType{
-			Arn: aws.String(ROOT_POLICY_PREFIX + taskPolicyName),
+			Arn: aws.String(rootPolicyPrefix + taskPolicyName),
 		},
 		DurationSeconds: aws.Int32(60),
 	}

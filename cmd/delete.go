@@ -10,7 +10,6 @@ import (
 	"github.com/unicrons/aws-root-manager/pkg/output"
 	"github.com/unicrons/aws-root-manager/pkg/service"
 
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/spf13/cobra"
 )
 
@@ -112,7 +111,7 @@ func init() {
 
 func delete(accountsFlags []string, credentialType string) error {
 	ctx := context.Background()
-	awscfg, err := config.LoadDefaultConfig(ctx)
+	awscfg, err := aws.LoadAWSConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to load aws config: %w", err)
 	}
