@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 )
 
-const ROOT_POLICY_PREFIX = "arn:aws:iam::aws:policy/root-task/"
+const rootPolicyPrefix = "arn:aws:iam::aws:policy/root-task/"
 
 type StsClient struct {
 	client *sts.Client
@@ -54,7 +54,7 @@ func (c *StsClient) assumeRoot(ctx context.Context, accountId, taskPolicyName st
 	params := &sts.AssumeRootInput{
 		TargetPrincipal: aws.String(accountId),
 		TaskPolicyArn: &types.PolicyDescriptorType{
-			Arn: aws.String(ROOT_POLICY_PREFIX + taskPolicyName),
+			Arn: aws.String(rootPolicyPrefix + taskPolicyName),
 		},
 		DurationSeconds: aws.Int32(60),
 	}
