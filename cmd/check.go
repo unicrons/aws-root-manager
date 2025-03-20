@@ -9,7 +9,6 @@ import (
 	"github.com/unicrons/aws-root-manager/pkg/output"
 	"github.com/unicrons/aws-root-manager/pkg/service"
 
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +20,7 @@ var checkCmd = &cobra.Command{
 		logger.Trace("cmd.check", "check called")
 
 		ctx := context.Background()
-		awscfg, err := config.LoadDefaultConfig(ctx)
+		awscfg, err := aws.LoadAWSConfig(ctx)
 		if err != nil {
 			logger.Error("cmd.check", err, "failed to load aws config")
 			return

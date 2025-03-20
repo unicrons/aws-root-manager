@@ -7,7 +7,6 @@ import (
 	"github.com/unicrons/aws-root-manager/pkg/logger"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 )
@@ -30,7 +29,7 @@ type OrganizationAccount struct {
 func GetNonManagementOrganizationAccounts(ctx context.Context) ([]OrganizationAccount, error) {
 	logger.Trace("aws.GetNonManagementOrganizationAccounts", "getting organization accounts")
 
-	awscfg, err := config.LoadDefaultConfig(ctx)
+	awscfg, err := LoadAWSConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load aws config: %w", err)
 	}
