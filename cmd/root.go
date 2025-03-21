@@ -21,6 +21,7 @@ This tool allows you to:
 - 🔒 Enable Centralized Root Access for better security and control.
 - 📊 Audit root access status across all organization accounts.
 - 🗑️ Delete root credentials to enforce security best practices.
+- 🛠️ Allow root password recovery.
 
 ✨ More features coming soon!
 

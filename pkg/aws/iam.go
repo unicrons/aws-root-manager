@@ -17,6 +17,7 @@ var (
 	ErrTrustedAccessNotEnabled             = errors.New("trustedAccessNotEnabled")
 	ErrRootCredentialsManagementNotEnabled = errors.New("rootCredentialsManagementNotEnabled")
 	ErrRootSessionsNotEnabled              = errors.New("rootSessionsNotEnabled")
+	ErrEntityAlreadyExists                 = errors.New("entityAlreadyExists")
 )
 
 type RootAccessStatus struct {
@@ -229,6 +230,25 @@ func (c *IamClient) EnableOrganizationsRootSessions(ctx context.Context) error {
 	}
 
 	logger.Info("aws.EnableOrganizationsRootSessions", "successfully enabled organization root sessions management")
+
+	return nil
+}
+
+// Allow root password recovery
+func (c *IamClient) CreateLoginProfile(ctx context.Context) error {
+	logger.Debug("aws.createLoginProfile", "creating loggin profile")
+
+	_, err := c.client.CreateLoginProfile(ctx, &iam.CreateLoginProfileInput{})
+	if err != nil {
+		var entityAlreadyExistsErr *types.EntityAlreadyExistsException
+		if errors.As(err, &entityAlreadyExistsErr) {
+			logger.Debug("aws.createLoginProfile", "login profile already exists")
+			return ErrEntityAlreadyExists
+		}
+		return fmt.Errorf("error creating login profile: %w", err)
+	}
+
+	logger.Info("aws.createLoginProfile", "successfully created login profile")
 
 	return nil
 }
