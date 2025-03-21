@@ -103,3 +103,64 @@ func hasCredentialsToDelete(creds aws.RootCredentials, credentialType string) bo
 		return false
 	}
 }
+
+// Enable the recovery process for root passwords for a list of AWS accounts
+func RecoverAccountsRootPassword(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accountIds []string) (map[string]bool, error) {
+	var (
+		wgAccounts sync.WaitGroup
+		results    = sync.Map{}
+		errChan    = make(chan error, len(accountIds))
+	)
+
+	if err := iam.CheckOrganizationRootAccess(ctx, false); err != nil {
+		return nil, err
+	}
+
+	for _, acc := range accountIds {
+		wgAccounts.Add(1)
+		go func(accountId string) {
+			defer wgAccounts.Done()
+			success, err := recoverAccountRootPassowrd(ctx, sts, acc)
+			results.Store(accountId, success)
+			if err != nil {
+				errChan <- err
+			}
+		}(acc)
+	}
+
+	wgAccounts.Wait()
+	close(errChan)
+
+	resultMap := make(map[string]bool)
+	results.Range(func(key, value any) bool {
+		resultMap[key.(string)] = value.(bool)
+		return true
+	})
+
+	if len(errChan) > 0 {
+		return resultMap, <-errChan
+	}
+
+	return resultMap, nil
+}
+
+// Enable the recovery process for root passwords for a specific account
+func recoverAccountRootPassowrd(ctx context.Context, sts *aws.StsClient, accountId string) (bool, error) {
+	logger.Trace("service.recoverAccountRootPassowrd", "trying to recover root password for account %s ", accountId)
+
+	awscfgRecoverRoot, err := sts.GetAssumeRootConfig(ctx, accountId, "IAMCreateRootUserPassword")
+	if err != nil {
+		return false, err
+	}
+	iamRecoverRoot := aws.NewIamClient(awscfgRecoverRoot)
+
+	err = iamRecoverRoot.CreateLoginProfile(ctx)
+	if err != nil {
+		if err == aws.ErrEntityAlreadyExists {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}

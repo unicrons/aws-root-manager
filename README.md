@@ -28,7 +28,7 @@ This tool enables AWS Organization administrators to manage centralized root acc
   - SQS policies *(coming soon)*.
 - **Check**: Verify centralized root access settings.
 - **Enable**: Enable centralized root access.
-- **Recovery**: Allow root password recovery *(coming soon)*.
+- **Recovery**: Allow root password recovery.
 
 Something missing? Open us a [feature request](https://github.com/unicrons/aws-root-manager/issues/new?template=feature_request.md)!
 
@@ -70,9 +70,10 @@ Usage:
 
 Available Commands:
   audit       Retrieve root credentials
-  check       Check if centralized root access is enabled.
+  check       Check if centralized root access is enabled
   delete      Delete root credentials
   enable      Enable centralized root access
+  recovery    Allow root password recovery
 
 Flags:
   -h, --help            help for aws-root-manager
