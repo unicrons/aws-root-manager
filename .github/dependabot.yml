@@ -17,3 +17,7 @@ updates:
     commit-message:
       prefix: "[dep][go]"
       include: "scope"
+    groups:
+      golang-dependencies:
+        patterns:
+          - "*"
