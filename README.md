@@ -50,6 +50,8 @@ Something missing? Open us a [feature request](https://github.com/unicrons/aws-r
   organizations:EnableAwsServiceAccess
   ```
 
+For more details about permissions and security considerations, see the [Security](#security) section below.
+
 ## How to use it
 
 ### Installation
