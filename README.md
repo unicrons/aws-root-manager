@@ -126,6 +126,47 @@ The tool uses a logger that, by default, is set to `INFO` level and outputs logs
 - `LOG_LEVEL`: Available options are `trace`, `debug`, `info`, `warn` and `error`. Default: `info`.
 - `LOG_FORMAT`: Available options are `text` and `json`. Default: `text`.
 
+## Security
+
+- All root credentials in this app are obtained using `sts:AssumeRoot` API, which is limited by design by AWS using AWS-managed task policies.
+- Root credentials obtained via `sts:AssumeRoot` cannot be used to perform actions beyond those defined in the task policies.
+- No credentials are stored by the tool - all operations are performed in-memory.
+- The recovery command uses `IAMCreateRootUserPassword` task policy to only initiate the password recovery process and does not provide access to root credentials.
+
+For more information about AWS root user privileged tasks, see the [AWS Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user-privileged-task.html).
+
+### Permissions and Task Policies
+
+Each command requires specific AWS-managed task policies when using `sts:AssumeRoot`. You can restrict which task policies are allowed using the `sts:TaskPolicyArn` IAM condition. Here are the task policies used by each command:
+
+- **audit**: [`IAMAuditRootUserCredentials`].
+- **check**: [].
+- **delete**: [`IAMAuditRootUserCredentials`, `IAMDeleteRootUserCredentials`, `S3UnlockBucketPolicy`, `SQSUnlockQueuePolicy`].
+- **enable**: [].
+- **recovery**: [`IAMCreateRootUserPassword`].
+
+Example:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "sts:AssumeRoot",
+            "Resource": "arn:aws:iam::<MEMBER_ACCOUNT_ID>:root",
+            "Condition": {
+                "StringEquals": {
+                    "sts:TaskPolicyArn": [
+                        "arn:aws:iam::aws:policy/root-task/IAMAuditRootUserCredentials",
+                        "arn:aws:iam::aws:policy/root-task/IAMDeleteRootUserCredentials"
+                    ]
+                }
+            }
+        }
+    ]
+}
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
