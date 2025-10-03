@@ -5,9 +5,21 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 const AllNonManagementText = "all non management accounts"
+
+var (
+	gray = lipgloss.Color("240")
+	pink = lipgloss.Color("205")
+
+	helpStyle              = lipgloss.NewStyle().Foreground(gray)
+	filterPlaceholderStyle = lipgloss.NewStyle().Foreground(gray).Faint(true)
+	cursorStyle            = lipgloss.NewStyle().Foreground(pink)
+
+	helpTextMultipleChoice = "↑/↓/←/→: Navigate • Space: Select • Enter: Confirm"
+)
 
 type model struct {
 	question      string
@@ -18,6 +30,8 @@ type model struct {
 	selected      map[string]struct{}
 	allChoicesMap map[int]string // Maps original index to choice text
 	quit          bool
+	pageSize      int
+	currentPage   int
 }
 
 func (m model) Init() tea.Cmd {
@@ -31,25 +45,43 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			m.quit = true
 			return m, tea.Quit
+		case "enter":
+			if len(m.selected) > 0 {
+				return m, tea.Quit
+			}
 		case "up":
 			if m.cursor > 0 {
 				m.cursor--
+			} else if m.currentPage > 0 {
+				m.currentPage--
+				m.cursor = m.pageSize - 1
 			}
 		case "down":
 			if m.cursor < len(m.filtered)-1 {
 				m.cursor++
+			} else if (m.currentPage+1)*m.pageSize < len(m.filtered) {
+				m.currentPage++
+				m.cursor = 0
+			}
+		case "left":
+			if m.currentPage > 0 {
+				m.currentPage--
+				m.cursor = 0
+			}
+		case "right":
+			if (m.currentPage+1)*m.pageSize < len(m.filtered) {
+				m.currentPage++
+				m.cursor = 0
 			}
 		case " ":
 			if len(m.filtered) > 0 {
-				currentChoice := m.filtered[m.cursor]
+				currentChoice := m.filtered[m.currentPage*m.pageSize+m.cursor]
 				if _, ok := m.selected[currentChoice]; ok {
 					delete(m.selected, currentChoice)
 				} else {
 					m.selected[currentChoice] = struct{}{}
 				}
 			}
-		case "enter":
-			return m, tea.Quit
 		case "backspace":
 			if len(m.filter) > 0 {
 				m.filter = m.filter[:len(m.filter)-1]
@@ -77,36 +109,59 @@ func (m *model) updateFilteredChoices() {
 			}
 		}
 	}
-	if len(m.filtered) == 0 {
-		m.cursor = 0
-	} else if m.cursor >= len(m.filtered) {
-		m.cursor = len(m.filtered) - 1
-	}
+
+	// Reset pagination when filter changes
+	m.currentPage = 0
+	m.cursor = 0
 }
 
 func (m model) View() string {
-	s := fmt.Sprintf("%s: [Use arrows to move, space to select, enter to confirm, type to filter]\n\n", m.question)
-	s += fmt.Sprintf("Filter: %s\n\n", m.filter)
+	s := fmt.Sprintf("%s:\n\n", m.question)
+
+	filterText := "Filter: "
+	if m.filter == "" {
+		filterText += filterPlaceholderStyle.Render("type to filter")
+	} else {
+		filterText += m.filter
+	}
+	s += fmt.Sprintf("%s\n\n", helpStyle.Render(filterText))
 
 	if len(m.filtered) == 0 {
 		s += "No matches found.\n"
 	} else {
-		for i, choice := range m.filtered {
+		start := m.currentPage * m.pageSize
+		end := min(start+m.pageSize, len(m.filtered))
+
+		for i, choice := range m.filtered[start:end] {
 			cursor := " "
 			if m.cursor == i {
-				cursor = ">"
+				cursor = cursorStyle.Render(">")
 			}
 
 			checked := " "
 			if _, ok := m.selected[choice]; ok {
-				checked = "x"
+				checked = cursorStyle.Render("x")
 			}
 
 			s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
 		}
+
+		if len(m.filtered) > m.pageSize {
+			s += fmt.Sprintf("\n%s\n",
+				helpStyle.Render(fmt.Sprintf("Page %d/%d (Showing %d-%d of %d items)",
+					m.currentPage+1,
+					(len(m.filtered)-1)/m.pageSize+1,
+					start+1,
+					end,
+					len(m.filtered))))
+		}
 	}
 
-	s += "\n"
+	if len(m.selected) == 0 {
+		s += "\n" + helpStyle.Render("Please select at least one item")
+	}
+
+	s += "\n" + helpStyle.Render(helpTextMultipleChoice)
 
 	return s
 }
@@ -126,7 +181,9 @@ func Prompt(question string, choices []string) ([]int, error) {
 			}
 			return m
 		}(),
-		quit: false,
+		quit:        false,
+		pageSize:    10,
+		currentPage: 0,
 	}
 
 	p := tea.NewProgram(m)
