@@ -8,15 +8,12 @@ import (
 	"github.com/unicrons/aws-root-manager/pkg/logger"
 )
 
-// Get root credentials for a list of AWS accounts
+// Get root credentials for a list of AWS accounts.
 func AuditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accounts []string) ([]aws.RootCredentials, error) {
 	logger.Trace("service.AuditAccounts", "auditing accounts %s", accounts)
 
-	var (
-		rootCredentials = make([]aws.RootCredentials, len(accounts))
-		wgAccounts      sync.WaitGroup
-		errChan         = make(chan error, len(accounts))
-	)
+	rootCredentials := make([]aws.RootCredentials, len(accounts))
+	var wgAccounts sync.WaitGroup
 
 	if err := iam.CheckOrganizationRootAccess(ctx, false); err != nil {
 		return nil, err
@@ -24,22 +21,18 @@ func AuditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, 
 
 	for i, accountId := range accounts {
 		wgAccounts.Add(1)
-		go func(accountId string) {
+		go func(idx int, accountId string) {
 			defer wgAccounts.Done()
 			if accStatus, err := auditAccount(ctx, sts, accountId); err != nil {
-				errChan <- err
+				logger.Error("service.AuditAccounts", err, "account %s: audit skipped", accountId)
+				rootCredentials[idx] = aws.RootCredentials{AccountId: accountId, Error: err.Error()}
 			} else {
-				rootCredentials[i] = accStatus
+				rootCredentials[idx] = accStatus
 			}
-		}(accountId)
+		}(i, accountId)
 	}
 
 	wgAccounts.Wait()
-	close(errChan)
-
-	if len(errChan) > 0 {
-		return rootCredentials, <-errChan
-	}
 
 	return rootCredentials, nil
 }

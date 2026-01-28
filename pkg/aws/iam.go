@@ -32,6 +32,7 @@ type RootCredentials struct {
 	AccessKeys          []string
 	MfaDevices          []string
 	SigningCertificates []string
+	Error               string
 }
 
 type IamClient struct {
