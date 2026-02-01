@@ -48,7 +48,7 @@ func GetNonManagementOrganizationAccounts(ctx context.Context) ([]OrganizationAc
 
 	var nonManagementOrgAccounts []OrganizationAccount
 	for _, acc := range orgAccounts {
-		if string(acc.Status) == "ACTIVE" && *acc.Id != mgmAccount {
+		if string(acc.State) == "ACTIVE" && *acc.Id != mgmAccount {
 			account := OrganizationAccount{
 				Name:      *acc.Name,
 				AccountID: *acc.Id,
