@@ -37,4 +37,10 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "table", "Set the output format (table, json, csv)")
+	rootCmd.AddCommand(Audit())
+	rootCmd.AddCommand(Check())
+	rootCmd.AddCommand(Enable())
+	rootCmd.AddCommand(Delete())
+	rootCmd.AddCommand(Recovery())
+	rootCmd.AddCommand(Version())
 }

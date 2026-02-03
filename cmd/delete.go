@@ -14,103 +14,38 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var deleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete root user credentials",
-	Long:  `Delete root user credentials for specific AWS Organization member accounts.`,
+func Delete() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete root user credentials",
+		Long:  `Delete root user credentials for specific AWS Organization member accounts.`,
+	}
+	cmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of AWS account IDs to audit (comma-separated). Use \"all\" to audit all accounts.")
+	cmd.AddCommand(deleteSubcommand("all", "Delete all existing root user credentials", "Delete all existing root user credentials for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand("login", "Delete root user Login Profile", "Delete existing root user Login Profile for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand("keys", "Delete root user Access Keys", "Delete existing root user Access Keys for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand("mfa", "Deactivate root user MFA Devices", "Deactivate existing root user MFA Devices for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand("certificates", "Delete root user Signin Certificates", "Delete existing root user Signing Certificates for specific AWS Organization member accounts."))
+	return cmd
 }
 
-var deleteAllCmd = &cobra.Command{
-	Use:          "all",
-	Short:        "Delete all existing root user credentials",
-	Long:         `Delete all existing root user credentials for specific AWS Organization member accounts.`,
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Trace("cmd.deleteAll", "delete all called")
-
-		if err := delete(accountsFlags, "all"); err != nil {
-			return err
-		}
-
-		return nil
-	},
+func deleteSubcommand(use, short, long string) *cobra.Command {
+	credentialType := use
+	if use == "certificates" {
+		credentialType = "certificate"
+	}
+	return &cobra.Command{
+		Use:          use,
+		Short:        short,
+		Long:         long,
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDelete(accountsFlags, credentialType)
+		},
+	}
 }
 
-var deleteLoginCmd = &cobra.Command{
-	Use:          "login",
-	Short:        "Delete root user Login Profile",
-	Long:         `Delete existing root user Login Profile for specific AWS Organization member accounts.`,
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Trace("cmd.deleteLogin", "delete login called")
-
-		if err := delete(accountsFlags, "login"); err != nil {
-			return err
-		}
-
-		return nil
-	},
-}
-
-var deleteKeysCmd = &cobra.Command{
-	Use:          "keys",
-	Short:        "Delete root user Access Keys",
-	Long:         `Delete existing root user Access Keys for specific AWS Organization member accounts.`,
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Trace("cmd.deleteKeys", "delete keys called")
-
-		if err := delete(accountsFlags, "keys"); err != nil {
-			return err
-		}
-
-		return nil
-	},
-}
-
-var deleteMfaCmd = &cobra.Command{
-	Use:          "mfa",
-	Short:        "Deactivate root user MFA Devices",
-	Long:         `Deactivate existing root user MFA Devices for specific AWS Organization member accounts.`,
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Trace("cmd.deleteMfa", "delete mfa called")
-
-		if err := delete(accountsFlags, "mfa"); err != nil {
-			return err
-		}
-
-		return nil
-	},
-}
-
-var deleteCertificatesCmd = &cobra.Command{
-	Use:          "certificates",
-	Short:        "Delete root user Signin Certificates",
-	Long:         `Delete existing root user Signing Certificates for specific AWS Organization member accounts.`,
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.Trace("cmd.deleteCertificates", "delete certificates called")
-
-		if err := delete(accountsFlags, "certificate"); err != nil {
-			return err
-		}
-
-		return nil
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(deleteCmd)
-	deleteCmd.AddCommand(deleteAllCmd)
-	deleteCmd.AddCommand(deleteLoginCmd)
-	deleteCmd.AddCommand(deleteKeysCmd)
-	deleteCmd.AddCommand(deleteMfaCmd)
-	deleteCmd.AddCommand(deleteCertificatesCmd)
-	deleteCmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of AWS account IDs to audit (comma-separated). Use \"all\" to audit all accounts.")
-}
-
-func delete(accountsFlags []string, credentialType string) error {
+func runDelete(accountsFlags []string, credentialType string) error {
 	ctx := context.Background()
 	awscfg, err := aws.LoadAWSConfig(ctx)
 	if err != nil {
@@ -143,7 +78,7 @@ func delete(accountsFlags []string, credentialType string) error {
 		data = append(data, []any{
 			account,
 			credentialType,
-			fmt.Sprintf("deleted"), // TODO: this is not real
+			"deleted", // TODO: this is not real
 		})
 	}
 	output.HandleOutput(outputFlag, headers, data)

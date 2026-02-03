@@ -13,52 +13,53 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var recoveryCmd = &cobra.Command{
-	Use:   "recovery",
-	Short: "Allow root password recovery",
-	Long:  `Retrieve the status of centralized root access settings for an AWS Organization.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		logger.Trace("cmd.recovery", "recovery called")
+func Recovery() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "recovery",
+		Short: "Allow root password recovery",
+		Long:  `Retrieve the status of centralized root access settings for an AWS Organization.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger.Trace("cmd.recovery", "recovery called")
 
-		ctx := context.Background()
-		awscfg, err := aws.LoadAWSConfig(ctx)
-		if err != nil {
-			logger.Error("cmd.recovery", err, "failed to load aws config")
-			return
-		}
-
-		targetAccounts, err := ui.SelectTargetAccounts(ctx, accountsFlags)
-		if err != nil {
-			logger.Error("cmd.recovery", err, "failed to get target accounts")
-		}
-		if len(targetAccounts) == 0 {
-			logger.Info("cmd.recovery", "no accounts selected")
-			return
-		}
-		logger.Debug("cmd.recovery", "selected accounts: %s", strings.Join(targetAccounts, ", "))
-
-		rm := service.NewRootManager(aws.NewIamClient(awscfg), aws.NewStsClient(awscfg), aws.NewOrganizationsClient(awscfg))
-		resultMap, err := rm.RecoverRootPassword(ctx, targetAccounts)
-		if err != nil {
-			logger.Error("cmd.recovery", err, "failed to recover root password")
-			return
-		}
-
-		headers := []string{"Account", "Login Profile"}
-		var data [][]any
-		for acc, success := range resultMap {
-			status := "recovered"
-			if !success {
-				status = "already exists"
+			ctx := context.Background()
+			awscfg, err := aws.LoadAWSConfig(ctx)
+			if err != nil {
+				logger.Error("cmd.recovery", err, "failed to load aws config")
+				return err
 			}
-			data = append(data, []any{acc, status})
-		}
 
-		output.HandleOutput(outputFlag, headers, data)
-	},
-}
+			targetAccounts, err := ui.SelectTargetAccounts(ctx, accountsFlags)
+			if err != nil {
+				logger.Error("cmd.recovery", err, "failed to get target accounts")
+				return err
+			}
+			if len(targetAccounts) == 0 {
+				logger.Info("cmd.recovery", "no accounts selected")
+				return nil
+			}
+			logger.Debug("cmd.recovery", "selected accounts: %s", strings.Join(targetAccounts, ", "))
 
-func init() {
-	rootCmd.AddCommand(recoveryCmd)
-	recoveryCmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of tarjet AWS account IDs (comma-separated). Use \"all\" to select all accounts.")
+			rm := service.NewRootManager(aws.NewIamClient(awscfg), aws.NewStsClient(awscfg), aws.NewOrganizationsClient(awscfg))
+			resultMap, err := rm.RecoverRootPassword(ctx, targetAccounts)
+			if err != nil {
+				logger.Error("cmd.recovery", err, "failed to recover root password")
+				return err
+			}
+
+			headers := []string{"Account", "Login Profile"}
+			var data [][]any
+			for acc, success := range resultMap {
+				status := "recovered"
+				if !success {
+					status = "already exists"
+				}
+				data = append(data, []any{acc, status})
+			}
+
+			output.HandleOutput(outputFlag, headers, data)
+			return nil
+		},
+	}
+	cmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of tarjet AWS account IDs (comma-separated). Use \"all\" to select all accounts.")
+	return cmd
 }
