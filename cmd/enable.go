@@ -4,10 +4,10 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/unicrons/aws-root-manager/pkg/aws"
-	"github.com/unicrons/aws-root-manager/pkg/logger"
-	"github.com/unicrons/aws-root-manager/pkg/output"
-	"github.com/unicrons/aws-root-manager/pkg/service"
+	"github.com/unicrons/aws-root-manager/internal/infra/aws"
+	"github.com/unicrons/aws-root-manager/internal/logger"
+	"github.com/unicrons/aws-root-manager/internal/cli/output"
+	"github.com/unicrons/aws-root-manager/internal/service"
 
 	"github.com/spf13/cobra"
 )

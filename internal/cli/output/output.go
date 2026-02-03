@@ -3,7 +3,7 @@ package output
 import (
 	"fmt"
 
-	"github.com/unicrons/aws-root-manager/pkg/logger"
+	"github.com/unicrons/aws-root-manager/internal/logger"
 )
 
 // HandleOutput handles the output based on the specified format

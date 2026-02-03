@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/unicrons/aws-root-manager/pkg/aws"
-	"github.com/unicrons/aws-root-manager/pkg/logger"
+	"github.com/unicrons/aws-root-manager/internal/infra/aws"
+	"github.com/unicrons/aws-root-manager/internal/logger"
 )
 
 // Get root credentials for a list of AWS accounts.

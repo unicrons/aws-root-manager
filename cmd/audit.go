@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/unicrons/aws-root-manager/pkg/aws"
-	"github.com/unicrons/aws-root-manager/pkg/logger"
-	"github.com/unicrons/aws-root-manager/pkg/output"
-	"github.com/unicrons/aws-root-manager/pkg/service"
+	"github.com/unicrons/aws-root-manager/internal/cli/output"
+	"github.com/unicrons/aws-root-manager/internal/cli/ui"
+	"github.com/unicrons/aws-root-manager/internal/infra/aws"
+	"github.com/unicrons/aws-root-manager/internal/logger"
+	"github.com/unicrons/aws-root-manager/internal/service"
 
 	"github.com/spf13/cobra"
 )
@@ -28,7 +29,7 @@ var auditCmd = &cobra.Command{
 			return err
 		}
 
-		auditAccounts, err := service.GetTargetAccounts(ctx, accountsFlags)
+		auditAccounts, err := ui.SelectTargetAccounts(ctx, accountsFlags)
 		if err != nil {
 			logger.Error("cmd.audit", err, "failed to get accounts to audit")
 			return err

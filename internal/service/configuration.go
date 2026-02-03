@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/unicrons/aws-root-manager/pkg/aws"
-	"github.com/unicrons/aws-root-manager/pkg/logger"
+	"github.com/unicrons/aws-root-manager/internal/infra/aws"
+	"github.com/unicrons/aws-root-manager/internal/logger"
 )
 
 func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessStatus, error) {
