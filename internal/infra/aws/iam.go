@@ -7,17 +7,11 @@ import (
 	"slices"
 
 	"github.com/unicrons/aws-root-manager/internal/logger"
+	"github.com/unicrons/aws-root-manager/rootmanager"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
-)
-
-var (
-	ErrTrustedAccessNotEnabled             = errors.New("trustedAccessNotEnabled")
-	ErrRootCredentialsManagementNotEnabled = errors.New("rootCredentialsManagementNotEnabled")
-	ErrRootSessionsNotEnabled              = errors.New("rootSessionsNotEnabled")
-	ErrEntityAlreadyExists                 = errors.New("entityAlreadyExists")
 )
 
 type RootAccessStatus struct {
@@ -52,14 +46,14 @@ func (c *IamClient) CheckOrganizationRootAccess(ctx context.Context, rootSession
 	if err != nil {
 		var serviceAccessNotEnabledErr *types.ServiceAccessNotEnabledException
 		if errors.As(err, &serviceAccessNotEnabledErr) {
-			return ErrTrustedAccessNotEnabled
+			return rootmanager.ErrTrustedAccessNotEnabled
 		}
 		return fmt.Errorf("aws.CheckOrganizationRootAccess: failed to list organization features: %w", err)
 	}
 
 	rootCredentialsManagement := slices.Contains(features.EnabledFeatures, "RootCredentialsManagement")
 	if !rootCredentialsManagement {
-		return ErrRootCredentialsManagementNotEnabled
+		return rootmanager.ErrRootCredentialsManagementNotEnabled
 	}
 
 	if !rootSessionsRequired {
@@ -68,7 +62,7 @@ func (c *IamClient) CheckOrganizationRootAccess(ctx context.Context, rootSession
 
 	rootSessions := slices.Contains(features.EnabledFeatures, "RootSessions")
 	if !rootSessions {
-		return ErrRootSessionsNotEnabled
+		return rootmanager.ErrRootSessionsNotEnabled
 	}
 
 	return nil
@@ -244,7 +238,7 @@ func (c *IamClient) CreateLoginProfile(ctx context.Context) error {
 		var entityAlreadyExistsErr *types.EntityAlreadyExistsException
 		if errors.As(err, &entityAlreadyExistsErr) {
 			logger.Debug("aws.createLoginProfile", "login profile already exists")
-			return ErrEntityAlreadyExists
+			return rootmanager.ErrEntityAlreadyExists
 		}
 		return fmt.Errorf("error creating login profile: %w", err)
 	}

@@ -127,15 +127,13 @@ func delete(accountsFlags []string, credentialType string) error {
 	}
 	logger.Debug("cmd.audit", "selected accounts: %s", strings.Join(auditAccounts, ", "))
 
-	iam := aws.NewIamClient(awscfg)
-	sts := aws.NewStsClient(awscfg)
-
-	audit, err := service.AuditAccounts(ctx, iam, sts, auditAccounts)
+	rm := service.NewRootManager(aws.NewIamClient(awscfg), aws.NewStsClient(awscfg), aws.NewOrganizationsClient(awscfg))
+	audit, err := rm.AuditAccounts(ctx, auditAccounts)
 	if err != nil {
 		return err
 	}
 
-	if err = service.DeleteAccountsCredentials(ctx, iam, sts, audit, credentialType); err != nil {
+	if err = rm.DeleteCredentials(ctx, audit, credentialType); err != nil {
 		return err
 	}
 

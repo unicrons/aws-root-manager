@@ -37,10 +37,8 @@ var recoveryCmd = &cobra.Command{
 		}
 		logger.Debug("cmd.recovery", "selected accounts: %s", strings.Join(targetAccounts, ", "))
 
-		iam := aws.NewIamClient(awscfg)
-		sts := aws.NewStsClient(awscfg)
-
-		resultMap, err := service.RecoverAccountsRootPassword(ctx, iam, sts, targetAccounts)
+		rm := service.NewRootManager(aws.NewIamClient(awscfg), aws.NewStsClient(awscfg), aws.NewOrganizationsClient(awscfg))
+		resultMap, err := rm.RecoverRootPassword(ctx, targetAccounts)
 		if err != nil {
 			logger.Error("cmd.recovery", err, "failed to recover root password")
 			return

@@ -26,8 +26,8 @@ var checkCmd = &cobra.Command{
 			return
 		}
 
-		iam := aws.NewIamClient(awscfg)
-		test, err := service.CheckRootAccess(ctx, iam)
+		rm := service.NewRootManager(aws.NewIamClient(awscfg), nil, nil)
+		status, err := rm.CheckRootAccess(ctx)
 		if err != nil {
 			logger.Error("cmd.check", err, "failed to check root access configuration")
 			return
@@ -35,9 +35,9 @@ var checkCmd = &cobra.Command{
 
 		headers := []string{"Name", "Status"}
 		data := [][]any{
-			{"TrustedAccess", strconv.FormatBool(test.TrustedAccess)},
-			{"RootCredentialsManagement", strconv.FormatBool(test.RootCredentialsManagement)},
-			{"RootSessions", strconv.FormatBool(test.RootSessions)},
+			{"TrustedAccess", strconv.FormatBool(status.TrustedAccess)},
+			{"RootCredentialsManagement", strconv.FormatBool(status.RootCredentialsManagement)},
+			{"RootSessions", strconv.FormatBool(status.RootSessions)},
 		}
 		output.HandleOutput(outputFlag, headers, data)
 	},

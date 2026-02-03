@@ -28,10 +28,8 @@ var enableCmd = &cobra.Command{
 			return
 		}
 
-		iam := aws.NewIamClient(awscfg)
-		org := aws.NewOrganizationsClient(awscfg)
-
-		initStatus, status, err := service.EnableRootAccess(ctx, iam, org, enableRootSessions)
+		rm := service.NewRootManager(aws.NewIamClient(awscfg), nil, aws.NewOrganizationsClient(awscfg))
+		initStatus, status, err := rm.EnableRootAccess(ctx, enableRootSessions)
 		if err != nil {
 			logger.Error("cmd.enable", err, "failed to enable root access")
 			return

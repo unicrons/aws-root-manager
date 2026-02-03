@@ -40,9 +40,8 @@ var auditCmd = &cobra.Command{
 		}
 		logger.Debug("cmd.audit", "selected accounts: %s", strings.Join(auditAccounts, ", "))
 
-		iam := aws.NewIamClient(awscfg)
-		sts := aws.NewStsClient(awscfg)
-		audit, err := service.AuditAccounts(ctx, iam, sts, auditAccounts)
+		rm := service.NewRootManager(aws.NewIamClient(awscfg), aws.NewStsClient(awscfg), aws.NewOrganizationsClient(awscfg))
+		audit, err := rm.AuditAccounts(ctx, auditAccounts)
 		if err != nil {
 			logger.Error("cmd.audit", err, "failed to audit accounts")
 			return err

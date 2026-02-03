@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/unicrons/aws-root-manager/internal/infra/aws"
 	"github.com/unicrons/aws-root-manager/internal/logger"
+	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
 // Delete root credentials for a list of AWS accounts
@@ -156,7 +158,7 @@ func recoverAccountRootPassowrd(ctx context.Context, sts *aws.StsClient, account
 
 	err = iamRecoverRoot.CreateLoginProfile(ctx)
 	if err != nil {
-		if err == aws.ErrEntityAlreadyExists {
+		if errors.Is(err, rootmanager.ErrEntityAlreadyExists) {
 			return false, nil
 		}
 		return false, err

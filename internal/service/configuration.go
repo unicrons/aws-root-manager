@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/unicrons/aws-root-manager/internal/infra/aws"
 	"github.com/unicrons/aws-root-manager/internal/logger"
+	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
 func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessStatus, error) {
@@ -16,17 +18,17 @@ func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessSta
 
 	err := iam.CheckOrganizationRootAccess(ctx, true)
 	if err != nil {
-		if err == aws.ErrTrustedAccessNotEnabled {
+		if errors.Is(err, rootmanager.ErrTrustedAccessNotEnabled) {
 			return status, nil
 		}
 		status.TrustedAccess = true
 
-		if err == aws.ErrRootCredentialsManagementNotEnabled {
+		if errors.Is(err, rootmanager.ErrRootCredentialsManagementNotEnabled) {
 			return status, nil
 		}
 		status.RootCredentialsManagement = true
 
-		if err == aws.ErrRootSessionsNotEnabled {
+		if errors.Is(err, rootmanager.ErrRootSessionsNotEnabled) {
 			return status, nil
 		}
 
