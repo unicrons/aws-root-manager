@@ -9,7 +9,7 @@ import (
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
-func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (rootmanager.RootAccessStatus, error) {
+func checkRootAccess(ctx context.Context, iam *aws.IamClient) (rootmanager.RootAccessStatus, error) {
 	var status = rootmanager.RootAccessStatus{
 		TrustedAccess:             false,
 		RootCredentialsManagement: false,
@@ -44,10 +44,10 @@ func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (rootmanager.RootA
 	return status, nil
 }
 
-func EnableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.OrganizationsClient, enableSessions bool) (rootmanager.RootAccessStatus, rootmanager.RootAccessStatus, error) {
+func enableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.OrganizationsClient, enableSessions bool) (rootmanager.RootAccessStatus, rootmanager.RootAccessStatus, error) {
 	var initStatus, status rootmanager.RootAccessStatus
 
-	initStatus, err := CheckRootAccess(ctx, iam)
+	initStatus, err := checkRootAccess(ctx, iam)
 	if err != nil {
 		return initStatus, status, err
 	}
@@ -77,7 +77,7 @@ func EnableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.Organiza
 		}
 	}
 
-	status, err = CheckRootAccess(ctx, iam)
+	status, err = checkRootAccess(ctx, iam)
 	if err != nil {
 		return initStatus, status, err
 	}

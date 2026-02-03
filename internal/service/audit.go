@@ -9,9 +9,9 @@ import (
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
-// Get root credentials for a list of AWS accounts.
-func AuditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accounts []string) ([]rootmanager.RootCredentials, error) {
-	logger.Trace("service.AuditAccounts", "auditing accounts %s", accounts)
+// auditAccounts returns root credentials for a list of AWS accounts.
+func auditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accounts []string) ([]rootmanager.RootCredentials, error) {
+	logger.Trace("service.auditAccounts", "auditing accounts %s", accounts)
 
 	rootCredentials := make([]rootmanager.RootCredentials, len(accounts))
 	var wgAccounts sync.WaitGroup
@@ -25,7 +25,7 @@ func AuditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, 
 		go func(idx int, accountId string) {
 			defer wgAccounts.Done()
 			if accStatus, err := auditAccount(ctx, sts, accountId); err != nil {
-				logger.Error("service.AuditAccounts", err, "account %s: audit skipped", accountId)
+				logger.Error("service.auditAccounts", err, "account %s: audit skipped", accountId)
 				rootCredentials[idx] = rootmanager.RootCredentials{AccountId: accountId, Error: err.Error()}
 			} else {
 				rootCredentials[idx] = accStatus
@@ -54,25 +54,25 @@ func auditAccount(ctx context.Context, sts *aws.StsClient, accountId string) (ro
 	if err != nil {
 		return accountRootCredentials, err
 	}
-	logger.Debug("service.AuditAccounts", "account %s - login_profile: %t", accountId, loginProfile)
+	logger.Debug("service.auditAccounts", "account %s - login_profile: %t", accountId, loginProfile)
 
 	accessKeys, err := iamRoot.ListAccessKeys(ctx, accountId)
 	if err != nil {
 		return accountRootCredentials, err
 	}
-	logger.Debug("service.AuditAccounts", "account %s - access_keys: %s", accountId, accessKeys)
+	logger.Debug("service.auditAccounts", "account %s - access_keys: %s", accountId, accessKeys)
 
 	mfaDevices, err := iamRoot.ListMFADevices(ctx, accountId)
 	if err != nil {
 		return accountRootCredentials, err
 	}
-	logger.Debug("service.AuditAccounts", "account %s - mfa_devices: %s", accountId, mfaDevices)
+	logger.Debug("service.auditAccounts", "account %s - mfa_devices: %s", accountId, mfaDevices)
 
 	certificates, err := iamRoot.ListSigningCertificates(ctx, accountId)
 	if err != nil {
 		return accountRootCredentials, err
 	}
-	logger.Debug("service.AuditAccounts", "account %s - signing_certificates: %s", accountId, certificates)
+	logger.Debug("service.auditAccounts", "account %s - signing_certificates: %s", accountId, certificates)
 
 	accountRootCredentials = rootmanager.RootCredentials{
 		AccountId:           accountId,

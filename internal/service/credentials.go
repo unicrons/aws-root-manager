@@ -10,8 +10,8 @@ import (
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
-// Delete root credentials for a list of AWS accounts
-func DeleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, creds []rootmanager.RootCredentials, credentialType string) error {
+// deleteAccountsCredentials deletes root credentials for a list of AWS accounts.
+func deleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, creds []rootmanager.RootCredentials, credentialType string) error {
 	var (
 		wgAccounts sync.WaitGroup
 		errChan    = make(chan error, len(creds))
@@ -25,7 +25,7 @@ func DeleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws
 		wgAccounts.Add(1)
 		go func(accountCreds rootmanager.RootCredentials) {
 			defer wgAccounts.Done()
-			if err := deleteAccountCrendentials(ctx, sts, accountCreds, credentialType); err != nil {
+			if err := deleteAccountCredentials(ctx, sts, accountCreds, credentialType); err != nil {
 				errChan <- err
 			}
 		}(accountCredentials)
@@ -41,13 +41,13 @@ func DeleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws
 	return nil
 }
 
-// Delete root credentials for a specific account
-func deleteAccountCrendentials(ctx context.Context, sts *aws.StsClient, creds rootmanager.RootCredentials, credentialType string) error {
-	logger.Trace("service.deleteAccountCrendentials", "checking if account %s has %s credentials to delete", credentialType, credentialType)
+// deleteAccountCredentials deletes root credentials for a specific account.
+func deleteAccountCredentials(ctx context.Context, sts *aws.StsClient, creds rootmanager.RootCredentials, credentialType string) error {
+	logger.Trace("service.deleteAccountCredentials", "checking if account %s has %s credentials to delete", credentialType, credentialType)
 
 	// Check if there are credentials to delete before assuming root
 	if !hasCredentialsToDelete(creds, credentialType) {
-		logger.Info("service.deleteAccountCrendentials", "no %s credentials found for account %s", credentialType, creds.AccountId)
+		logger.Info("service.deleteAccountCredentials", "no %s credentials found for account %s", credentialType, creds.AccountId)
 		return nil
 	}
 
@@ -106,8 +106,8 @@ func hasCredentialsToDelete(creds rootmanager.RootCredentials, credentialType st
 	}
 }
 
-// Enable the recovery process for root passwords for a list of AWS accounts
-func RecoverAccountsRootPassword(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accountIds []string) (map[string]bool, error) {
+// recoverAccountsRootPassword initiates root password recovery for a list of AWS accounts.
+func recoverAccountsRootPassword(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accountIds []string) (map[string]bool, error) {
 	var (
 		wgAccounts sync.WaitGroup
 		results    = sync.Map{}
