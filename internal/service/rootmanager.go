@@ -8,8 +8,7 @@ import (
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
-// rootManagerImpl implements rootmanager.RootManager and converts between
-// rootmanager types (public API) and aws types (infra) at the boundary.
+// rootManagerImpl implements rootmanager.RootManager using AWS clients.
 type rootManagerImpl struct {
 	iam *aws.IamClient
 	sts *aws.StsClient
@@ -26,41 +25,25 @@ func (r *rootManagerImpl) AuditAccounts(ctx context.Context, accountIds []string
 	if r.sts == nil {
 		return nil, errors.New("STS client required for audit")
 	}
-	creds, err := AuditAccounts(ctx, r.iam, r.sts, accountIds)
-	if err != nil {
-		return nil, err
-	}
-	return toRootCredentialsSlice(creds), nil
+	return AuditAccounts(ctx, r.iam, r.sts, accountIds)
 }
 
 func (r *rootManagerImpl) CheckRootAccess(ctx context.Context) (rootmanager.RootAccessStatus, error) {
-	status, err := CheckRootAccess(ctx, r.iam)
-	if err != nil {
-		return rootmanager.RootAccessStatus{}, err
-	}
-	return toRootAccessStatus(status), nil
+	return CheckRootAccess(ctx, r.iam)
 }
 
 func (r *rootManagerImpl) EnableRootAccess(ctx context.Context, enableSessions bool) (rootmanager.RootAccessStatus, rootmanager.RootAccessStatus, error) {
 	if r.org == nil {
 		return rootmanager.RootAccessStatus{}, rootmanager.RootAccessStatus{}, errors.New("Organizations client required for enable")
 	}
-	initStatus, status, err := EnableRootAccess(ctx, r.iam, r.org, enableSessions)
-	if err != nil {
-		return toRootAccessStatus(initStatus), toRootAccessStatus(status), err
-	}
-	return toRootAccessStatus(initStatus), toRootAccessStatus(status), nil
+	return EnableRootAccess(ctx, r.iam, r.org, enableSessions)
 }
 
 func (r *rootManagerImpl) DeleteCredentials(ctx context.Context, creds []rootmanager.RootCredentials, credentialType string) error {
 	if r.sts == nil {
 		return errors.New("STS client required for delete")
 	}
-	awsCreds := fromRootCredentialsSlice(creds)
-	if err := DeleteAccountsCredentials(ctx, r.iam, r.sts, awsCreds, credentialType); err != nil {
-		return err
-	}
-	return nil
+	return DeleteAccountsCredentials(ctx, r.iam, r.sts, creds, credentialType)
 }
 
 func (r *rootManagerImpl) RecoverRootPassword(ctx context.Context, accountIds []string) (map[string]bool, error) {
@@ -72,50 +55,4 @@ func (r *rootManagerImpl) RecoverRootPassword(ctx context.Context, accountIds []
 		return nil, err
 	}
 	return resultMap, nil
-}
-
-func toRootCredentials(c aws.RootCredentials) rootmanager.RootCredentials {
-	return rootmanager.RootCredentials{
-		AccountId:           c.AccountId,
-		LoginProfile:        c.LoginProfile,
-		AccessKeys:          append([]string(nil), c.AccessKeys...),
-		MfaDevices:          append([]string(nil), c.MfaDevices...),
-		SigningCertificates: append([]string(nil), c.SigningCertificates...),
-		Error:               c.Error,
-	}
-}
-
-func toRootCredentialsSlice(creds []aws.RootCredentials) []rootmanager.RootCredentials {
-	out := make([]rootmanager.RootCredentials, len(creds))
-	for i := range creds {
-		out[i] = toRootCredentials(creds[i])
-	}
-	return out
-}
-
-func fromRootCredentials(c rootmanager.RootCredentials) aws.RootCredentials {
-	return aws.RootCredentials{
-		AccountId:           c.AccountId,
-		LoginProfile:        c.LoginProfile,
-		AccessKeys:          append([]string(nil), c.AccessKeys...),
-		MfaDevices:          append([]string(nil), c.MfaDevices...),
-		SigningCertificates: append([]string(nil), c.SigningCertificates...),
-		Error:               c.Error,
-	}
-}
-
-func fromRootCredentialsSlice(creds []rootmanager.RootCredentials) []aws.RootCredentials {
-	out := make([]aws.RootCredentials, len(creds))
-	for i := range creds {
-		out[i] = fromRootCredentials(creds[i])
-	}
-	return out
-}
-
-func toRootAccessStatus(s aws.RootAccessStatus) rootmanager.RootAccessStatus {
-	return rootmanager.RootAccessStatus{
-		TrustedAccess:             s.TrustedAccess,
-		RootCredentialsManagement: s.RootCredentialsManagement,
-		RootSessions:              s.RootSessions,
-	}
 }

@@ -14,21 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
-type RootAccessStatus struct {
-	TrustedAccess             bool
-	RootCredentialsManagement bool
-	RootSessions              bool
-}
-
-type RootCredentials struct {
-	AccountId           string
-	LoginProfile        bool
-	AccessKeys          []string
-	MfaDevices          []string
-	SigningCertificates []string
-	Error               string
-}
-
 type IamClient struct {
 	client *iam.Client
 }

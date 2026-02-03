@@ -11,7 +11,7 @@ import (
 )
 
 // Delete root credentials for a list of AWS accounts
-func DeleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, creds []aws.RootCredentials, credentialType string) error {
+func DeleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, creds []rootmanager.RootCredentials, credentialType string) error {
 	var (
 		wgAccounts sync.WaitGroup
 		errChan    = make(chan error, len(creds))
@@ -23,9 +23,9 @@ func DeleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws
 
 	for _, accountCredentials := range creds {
 		wgAccounts.Add(1)
-		go func(accountId aws.RootCredentials) {
+		go func(accountCreds rootmanager.RootCredentials) {
 			defer wgAccounts.Done()
-			if err := deleteAccountCrendentials(ctx, sts, accountCredentials, credentialType); err != nil {
+			if err := deleteAccountCrendentials(ctx, sts, accountCreds, credentialType); err != nil {
 				errChan <- err
 			}
 		}(accountCredentials)
@@ -42,7 +42,7 @@ func DeleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws
 }
 
 // Delete root credentials for a specific account
-func deleteAccountCrendentials(ctx context.Context, sts *aws.StsClient, creds aws.RootCredentials, credentialType string) error {
+func deleteAccountCrendentials(ctx context.Context, sts *aws.StsClient, creds rootmanager.RootCredentials, credentialType string) error {
 	logger.Trace("service.deleteAccountCrendentials", "checking if account %s has %s credentials to delete", credentialType, credentialType)
 
 	// Check if there are credentials to delete before assuming root
@@ -89,7 +89,7 @@ func deleteAccountCrendentials(ctx context.Context, sts *aws.StsClient, creds aw
 }
 
 // Check if the account has credentials to delete based on the credential type
-func hasCredentialsToDelete(creds aws.RootCredentials, credentialType string) bool {
+func hasCredentialsToDelete(creds rootmanager.RootCredentials, credentialType string) bool {
 	switch credentialType {
 	case "all":
 		return creds.LoginProfile || len(creds.AccessKeys) > 0 || len(creds.MfaDevices) > 0 || len(creds.SigningCertificates) > 0

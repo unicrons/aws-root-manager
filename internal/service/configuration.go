@@ -9,8 +9,8 @@ import (
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
-func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessStatus, error) {
-	var status = aws.RootAccessStatus{
+func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (rootmanager.RootAccessStatus, error) {
+	var status = rootmanager.RootAccessStatus{
 		TrustedAccess:             false,
 		RootCredentialsManagement: false,
 		RootSessions:              false,
@@ -32,10 +32,10 @@ func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessSta
 			return status, nil
 		}
 
-		return aws.RootAccessStatus{}, err
+		return rootmanager.RootAccessStatus{}, err
 	}
 
-	status = aws.RootAccessStatus{
+	status = rootmanager.RootAccessStatus{
 		TrustedAccess:             true,
 		RootCredentialsManagement: true,
 		RootSessions:              true,
@@ -44,8 +44,8 @@ func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessSta
 	return status, nil
 }
 
-func EnableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.OrganizationsClient, enableSessions bool) (aws.RootAccessStatus, aws.RootAccessStatus, error) {
-	var initStatus, status aws.RootAccessStatus
+func EnableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.OrganizationsClient, enableSessions bool) (rootmanager.RootAccessStatus, rootmanager.RootAccessStatus, error) {
+	var initStatus, status rootmanager.RootAccessStatus
 
 	initStatus, err := CheckRootAccess(ctx, iam)
 	if err != nil {

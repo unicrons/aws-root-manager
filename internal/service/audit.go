@@ -6,13 +6,14 @@ import (
 
 	"github.com/unicrons/aws-root-manager/internal/infra/aws"
 	"github.com/unicrons/aws-root-manager/internal/logger"
+	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
 // Get root credentials for a list of AWS accounts.
-func AuditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accounts []string) ([]aws.RootCredentials, error) {
+func AuditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accounts []string) ([]rootmanager.RootCredentials, error) {
 	logger.Trace("service.AuditAccounts", "auditing accounts %s", accounts)
 
-	rootCredentials := make([]aws.RootCredentials, len(accounts))
+	rootCredentials := make([]rootmanager.RootCredentials, len(accounts))
 	var wgAccounts sync.WaitGroup
 
 	if err := iam.CheckOrganizationRootAccess(ctx, false); err != nil {
@@ -25,7 +26,7 @@ func AuditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, 
 			defer wgAccounts.Done()
 			if accStatus, err := auditAccount(ctx, sts, accountId); err != nil {
 				logger.Error("service.AuditAccounts", err, "account %s: audit skipped", accountId)
-				rootCredentials[idx] = aws.RootCredentials{AccountId: accountId, Error: err.Error()}
+				rootCredentials[idx] = rootmanager.RootCredentials{AccountId: accountId, Error: err.Error()}
 			} else {
 				rootCredentials[idx] = accStatus
 			}
@@ -38,16 +39,16 @@ func AuditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, 
 }
 
 // Get root credentials for a specific account
-func auditAccount(ctx context.Context, sts *aws.StsClient, accountId string) (aws.RootCredentials, error) {
+func auditAccount(ctx context.Context, sts *aws.StsClient, accountId string) (rootmanager.RootCredentials, error) {
 	logger.Trace("service.auditAccount", "auditing account %s", accountId)
 
 	awscfgRoot, err := sts.GetAssumeRootConfig(ctx, accountId, "IAMAuditRootUserCredentials")
 	if err != nil {
-		return aws.RootCredentials{}, err
+		return rootmanager.RootCredentials{}, err
 	}
 
 	iamRoot := aws.NewIamClient(awscfgRoot)
-	var accountRootCredentials aws.RootCredentials
+	var accountRootCredentials rootmanager.RootCredentials
 
 	loginProfile, err := iamRoot.GetLoginProfile(ctx, accountId)
 	if err != nil {
@@ -73,7 +74,7 @@ func auditAccount(ctx context.Context, sts *aws.StsClient, accountId string) (aw
 	}
 	logger.Debug("service.AuditAccounts", "account %s - signing_certificates: %s", accountId, certificates)
 
-	accountRootCredentials = aws.RootCredentials{
+	accountRootCredentials = rootmanager.RootCredentials{
 		AccountId:           accountId,
 		LoginProfile:        loginProfile,
 		AccessKeys:          accessKeys,
