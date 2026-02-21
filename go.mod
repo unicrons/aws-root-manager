@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.7
 	github.com/aws/aws-sdk-go-v2/service/iam v1.53.2
-	github.com/aws/aws-sdk-go-v2/service/organizations v1.50.1
+	github.com/aws/aws-sdk-go-v2/service/organizations v1.50.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
