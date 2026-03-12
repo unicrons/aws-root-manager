@@ -3,8 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
-
-	"github.com/unicrons/aws-root-manager/internal/logger"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
@@ -27,7 +26,7 @@ type OrganizationAccount struct {
 
 // Fetches AWS Organization accounts, excluding the management account
 func GetNonManagementOrganizationAccounts(ctx context.Context) ([]OrganizationAccount, error) {
-	logger.Trace("aws.GetNonManagementOrganizationAccounts", "getting organization accounts")
+	slog.Debug("getting organization accounts")
 
 	awscfg, err := LoadAWSConfig(ctx)
 	if err != nil {
@@ -61,7 +60,7 @@ func GetNonManagementOrganizationAccounts(ctx context.Context) ([]OrganizationAc
 }
 
 func (c *organizationsClient) listOrganizationAccounts() ([]types.Account, error) {
-	logger.Trace("aws.listOrganizationAccounts", "listing organization accounts")
+	slog.Debug("listing organization accounts")
 
 	params := &organizations.ListAccountsInput{}
 	paginator := organizations.NewListAccountsPaginator(c.client, params)
@@ -80,7 +79,7 @@ func (c *organizationsClient) listOrganizationAccounts() ([]types.Account, error
 }
 
 func (c *organizationsClient) describeOrganization(ctx context.Context) (string, error) {
-	logger.Trace("aws.describeOrganization", "describing organization")
+	slog.Debug("describing organization")
 
 	organization, err := c.client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
 	if err != nil {
@@ -91,7 +90,7 @@ func (c *organizationsClient) describeOrganization(ctx context.Context) (string,
 }
 
 func (c *organizationsClient) EnableAWSServiceAccess(ctx context.Context, service string) error {
-	logger.Trace("aws.EnableAWSServiceAccess", "enabling %s service access", service)
+	slog.Debug("enabling service access", "service", service)
 
 	_, err := c.client.EnableAWSServiceAccess(ctx, &organizations.EnableAWSServiceAccessInput{
 		ServicePrincipal: aws.String(service),

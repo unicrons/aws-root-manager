@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/unicrons/aws-root-manager/internal/infra/aws"
-	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
@@ -53,7 +53,7 @@ func enableRootAccess(ctx context.Context, iam aws.IamClient, org aws.Organizati
 	}
 
 	if !initStatus.TrustedAccess {
-		logger.Debug("service.EnableRootAccess", "trusted access is disabled")
+		slog.Debug("trusted access is disabled")
 		err := org.EnableAWSServiceAccess(ctx, "iam.amazonaws.com")
 		if err != nil {
 			return initStatus, status, err
@@ -61,7 +61,7 @@ func enableRootAccess(ctx context.Context, iam aws.IamClient, org aws.Organizati
 	}
 
 	if !initStatus.RootCredentialsManagement {
-		logger.Debug("service.EnableRootAccess", "root credentials management is disabled")
+		slog.Debug("root credentials management is disabled")
 		err = iam.EnableOrganizationsRootCredentialsManagement(ctx)
 		if err != nil {
 			return initStatus, status, err
@@ -69,7 +69,7 @@ func enableRootAccess(ctx context.Context, iam aws.IamClient, org aws.Organizati
 	}
 
 	if !initStatus.RootSessions && enableSessions {
-		logger.Debug("service.EnableRootAccess", "root sessions is disabled")
+		slog.Debug("root sessions is disabled")
 
 		err = iam.EnableOrganizationsRootSessions(ctx)
 		if err != nil {

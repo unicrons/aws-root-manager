@@ -3,8 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
-
-	"github.com/unicrons/aws-root-manager/internal/logger"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -23,7 +22,7 @@ func NewStsClient(awscfg aws.Config) StsClient {
 }
 
 func (c *stsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPolicyName string) (aws.Config, error) {
-	logger.Trace("aws.GetAssumeRootConfig", "getting root aws.config account %s and task %s", accountId, taskPolicyName)
+	slog.Debug("getting root aws config", "account_id", accountId, "task", taskPolicyName)
 
 	stsCreds, err := c.assumeRoot(ctx, accountId, taskPolicyName)
 	if err != nil {
@@ -43,13 +42,13 @@ func (c *stsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPoli
 		return aws.Config{}, fmt.Errorf("error loading aws root config: %s", err)
 	}
 
-	logger.Debug("aws.GetAssumeRootConfig", "successfully generated assume root credentials for account %s and task %s", accountId, taskPolicyName)
+	slog.Debug("successfully generated assume root credentials", "account_id", accountId, "task", taskPolicyName)
 
 	return awsrootcfg, nil
 }
 
 func (c *stsClient) assumeRoot(ctx context.Context, accountId, taskPolicyName string) (types.Credentials, error) {
-	logger.Trace("aws.assumeRoot", "assuming root for account %s and task %s", accountId, taskPolicyName)
+	slog.Debug("assuming root", "account_id", accountId, "task", taskPolicyName)
 
 	params := &sts.AssumeRootInput{
 		TargetPrincipal: aws.String(accountId),

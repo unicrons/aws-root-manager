@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
-	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/internal/service"
 
 	"github.com/spf13/cobra"
@@ -56,10 +56,10 @@ func runDelete(accountsFlags []string, credentialType string) error {
 		return fmt.Errorf("failed to get accounts to audit: %w", err)
 	}
 	if len(auditAccounts) == 0 {
-		logger.Info("cmd.delete", "no accounts selected")
+		slog.Info("no accounts selected")
 		return nil
 	}
-	logger.Debug("cmd.delete", "selected accounts: %s", strings.Join(auditAccounts, ", "))
+	slog.Debug("selected accounts", "accounts", strings.Join(auditAccounts, ", "))
 
 	audit, err := rm.AuditAccounts(ctx, auditAccounts)
 	if err != nil {

@@ -3,9 +3,9 @@ package ui
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/unicrons/aws-root-manager/internal/infra/aws"
-	"github.com/unicrons/aws-root-manager/internal/logger"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 // SelectTargetAccounts handles interactive account selection or returns accounts based on flags.
 // Returns account IDs based on flags or TUI prompt.
 func SelectTargetAccounts(ctx context.Context, accountsFlag []string) ([]string, error) {
-	logger.Trace("ui.SelectTargetAccounts", "processing target accounts: %s", accountsFlag)
+	slog.Debug("processing target accounts", "accounts_flag", accountsFlag)
 
 	// if accounts are provided and "all" is not specified, return them
 	if len(accountsFlag) > 0 && accountsFlag[0] != AllAccountsOption {
@@ -50,7 +50,7 @@ func SelectTargetAccounts(ctx context.Context, accountsFlag []string) ([]string,
 
 	// Resolve selected accounts
 	if allSelected(selectedIndexes) {
-		logger.Debug("ui.SelectTargetAccounts", "all accounts selected")
+		slog.Debug("all accounts selected")
 		return convertAccountsToIDs(orgAccounts), nil
 	}
 

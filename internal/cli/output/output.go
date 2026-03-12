@@ -2,8 +2,7 @@ package output
 
 import (
 	"fmt"
-
-	"github.com/unicrons/aws-root-manager/internal/logger"
+	"log/slog"
 )
 
 // HandleOutput handles the output based on the specified format
@@ -11,16 +10,16 @@ func HandleOutput(format string, headers []string, rawData [][]any) {
 	switch format {
 	case "json":
 		if err := PrintJSON(headers, rawData); err != nil {
-			logger.Error("output.HandleOutput", err, "error printing json")
+			slog.Error("error printing json", "error", err)
 		}
 	case "csv":
 		if err := printCSV(headers, dataToString(rawData)); err != nil {
-			logger.Error("output.HandleOutput", err, "error printing csv")
+			slog.Error("error printing csv", "error", err)
 		}
 	case "table":
 		printTable(headers, rawData)
 	default:
-		logger.Error("output.HandleOutput", nil, "unsupported output format: %v", format)
+		slog.Error("unsupported output format", "format", format)
 	}
 }
 

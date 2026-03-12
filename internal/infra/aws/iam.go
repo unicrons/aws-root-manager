@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 
-	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/rootmanager"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -25,7 +25,7 @@ func NewIamClient(awscfg aws.Config) IamClient {
 
 // Verifies if AWS centralized root access is enabled
 func (c *iamClient) CheckOrganizationRootAccess(ctx context.Context, rootSessionsRequired bool) error {
-	logger.Trace("aws.CheckOrganizationRootAccess", "checking if organization root access is enabled")
+	slog.Debug("checking if organization root access is enabled")
 
 	features, err := c.client.ListOrganizationsFeatures(ctx, &iam.ListOrganizationsFeaturesInput{})
 	if err != nil {
@@ -55,13 +55,13 @@ func (c *iamClient) CheckOrganizationRootAccess(ctx context.Context, rootSession
 
 // Check if an account has root login profile enabled
 func (c *iamClient) GetLoginProfile(ctx context.Context, accountId string) (bool, error) {
-	logger.Debug("aws.GetLoginProfile", "getting login profile for account %s", accountId)
+	slog.Debug("getting login profile", "account_id", accountId)
 
 	_, err := c.client.GetLoginProfile(ctx, &iam.GetLoginProfileInput{})
 	if err != nil {
 		var notFoundErr *types.NoSuchEntityException
 		if errors.As(err, &notFoundErr) {
-			logger.Debug("aws.GetLoginProfile", "account %s does not have a root login profile", accountId)
+			slog.Debug("account does not have a root login profile", "account_id", accountId)
 			return false, nil
 		}
 		return true, fmt.Errorf("error getting root login profile for account %s: %w", accountId, err)
@@ -72,21 +72,21 @@ func (c *iamClient) GetLoginProfile(ctx context.Context, accountId string) (bool
 
 // Delete root login profile for a specific account
 func (c *iamClient) DeleteLoginProfile(ctx context.Context, accountId string) error {
-	logger.Debug("aws.DeleteLoginProfile", "deleting login profile for account %s", accountId)
+	slog.Debug("deleting login profile", "account_id", accountId)
 
 	_, err := c.client.DeleteLoginProfile(ctx, &iam.DeleteLoginProfileInput{})
 	if err != nil {
 		return fmt.Errorf("error deleting root login profile for account %s: %w", accountId, err)
 	}
 
-	logger.Info("aws.DeleteLoginProfile", "successfully deleted login profile for account %s", accountId)
+	slog.Info("successfully deleted login profile", "account_id", accountId)
 
 	return nil
 }
 
 // Get a list of root access keys for a specific account
 func (c *iamClient) ListAccessKeys(ctx context.Context, accountId string) ([]string, error) {
-	logger.Debug("aws.ListAccessKeys", "listing access keys for account %s", accountId)
+	slog.Debug("listing access keys", "account_id", accountId)
 
 	accessKeys, err := c.client.ListAccessKeys(ctx, &iam.ListAccessKeysInput{})
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *iamClient) ListAccessKeys(ctx context.Context, accountId string) ([]str
 
 // Delete a list of root access for a specific account
 func (c *iamClient) DeleteAccessKeys(ctx context.Context, accountId string, accessKeyIds []string) error {
-	logger.Debug("aws.DeleteAccessKeys", "deleting root access key %s for account %s", accessKeyIds, accountId)
+	slog.Debug("deleting root access keys", "account_id", accountId, "access_key_ids", accessKeyIds)
 
 	for _, accessKeyId := range accessKeyIds {
 		_, err := c.client.DeleteAccessKey(ctx, &iam.DeleteAccessKeyInput{
@@ -114,7 +114,7 @@ func (c *iamClient) DeleteAccessKeys(ctx context.Context, accountId string, acce
 		}
 	}
 
-	logger.Info("aws.DeleteAccessKeys", "successfully deleted access keys for account %s", accountId)
+	slog.Info("successfully deleted access keys", "account_id", accountId)
 
 	return nil
 }
@@ -136,7 +136,7 @@ func (c *iamClient) ListMFADevices(ctx context.Context, accountId string) ([]str
 
 // Deactivate a list of root MFA devices for a specific account
 func (c *iamClient) DeactivateMFADevices(ctx context.Context, accountId string, mfaSerialNumbers []string) error {
-	logger.Debug("aws.DeactivateMFADevices", "deleting root mfa device %s for account %s", mfaSerialNumbers, accountId)
+	slog.Debug("deactivating root mfa devices", "account_id", accountId, "mfa_serial_numbers", mfaSerialNumbers)
 
 	for _, mfaSerialNumber := range mfaSerialNumbers {
 		_, err := c.client.DeactivateMFADevice(ctx, &iam.DeactivateMFADeviceInput{
@@ -147,7 +147,7 @@ func (c *iamClient) DeactivateMFADevices(ctx context.Context, accountId string, 
 		}
 	}
 
-	logger.Info("aws.DeactivateMFADevices", "successfully deactivated mfa devices for account %s", accountId)
+	slog.Info("successfully deactivated mfa devices", "account_id", accountId)
 
 	return nil
 }
@@ -169,11 +169,9 @@ func (c *iamClient) ListSigningCertificates(ctx context.Context, accountId strin
 
 // Delete a list of root signing certificates for a specific account
 func (c *iamClient) DeleteSigningCertificates(ctx context.Context, accountId string, certificates []string) error {
-	logger.Debug("aws.DeleteSigningCertificates", "deleting singin certificates %s for account %s", certificates, accountId)
+	slog.Debug("deleting signing certificates", "account_id", accountId, "certificates", certificates)
 
 	for _, certificate := range certificates {
-		logger.Debug("aws.DeleteSigningCertificates", "deleting root Signing Certificate %s", certificate)
-
 		if _, err := c.client.DeleteSigningCertificate(ctx, &iam.DeleteSigningCertificateInput{
 			CertificateId: aws.String(certificate),
 		}); err != nil {
@@ -181,54 +179,54 @@ func (c *iamClient) DeleteSigningCertificates(ctx context.Context, accountId str
 		}
 	}
 
-	logger.Info("aws.DeleteSigningCertificates", "successfully deleted signing certificates for account %s", accountId)
+	slog.Info("successfully deleted signing certificates", "account_id", accountId)
 
 	return nil
 }
 
 // Enable centralized root credentials management
 func (c *iamClient) EnableOrganizationsRootCredentialsManagement(ctx context.Context) error {
-	logger.Debug("aws.EnableOrganizationsRootCredentialsManagement", "enabling organization root credentials management")
+	slog.Debug("enabling organization root credentials management")
 
 	_, err := c.client.EnableOrganizationsRootCredentialsManagement(ctx, &iam.EnableOrganizationsRootCredentialsManagementInput{})
 	if err != nil {
 		return fmt.Errorf("error enabling organization root credentials management: %w", err)
 	}
 
-	logger.Info("aws.EnableOrganizationsRootCredentialsManagement", "successfully enabled organization root credentials management")
+	slog.Info("successfully enabled organization root credentials management")
 
 	return nil
 }
 
 // Enable centralized root sessions
 func (c *iamClient) EnableOrganizationsRootSessions(ctx context.Context) error {
-	logger.Debug("aws.EnableOrganizationsRootSessions", "enabling organization root sessions")
+	slog.Debug("enabling organization root sessions")
 
 	_, err := c.client.EnableOrganizationsRootSessions(ctx, &iam.EnableOrganizationsRootSessionsInput{})
 	if err != nil {
 		return fmt.Errorf("error enabling organization root sessions: %w", err)
 	}
 
-	logger.Info("aws.EnableOrganizationsRootSessions", "successfully enabled organization root sessions management")
+	slog.Info("successfully enabled organization root sessions management")
 
 	return nil
 }
 
 // Allow root password recovery
 func (c *iamClient) CreateLoginProfile(ctx context.Context) error {
-	logger.Debug("aws.createLoginProfile", "creating loggin profile")
+	slog.Debug("creating login profile")
 
 	_, err := c.client.CreateLoginProfile(ctx, &iam.CreateLoginProfileInput{})
 	if err != nil {
 		var entityAlreadyExistsErr *types.EntityAlreadyExistsException
 		if errors.As(err, &entityAlreadyExistsErr) {
-			logger.Debug("aws.createLoginProfile", "login profile already exists")
+			slog.Debug("login profile already exists")
 			return rootmanager.ErrEntityAlreadyExists
 		}
 		return fmt.Errorf("error creating login profile: %w", err)
 	}
 
-	logger.Info("aws.createLoginProfile", "successfully created login profile")
+	slog.Info("successfully created login profile")
 
 	return nil
 }

@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sync"
 
 	"github.com/unicrons/aws-root-manager/internal/infra/aws"
-	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
@@ -25,7 +25,7 @@ func deleteAccountsCredentials(ctx context.Context, iam aws.IamClient, sts aws.S
 		go func(idx int, accountCreds rootmanager.RootCredentials) {
 			defer wgAccounts.Done()
 			if err := deleteAccountCredentials(ctx, sts, factory, accountCreds, credentialType); err != nil {
-				logger.Error("service.deleteAccountsCredentials", err, "account %s: deletion failed", accountCreds.AccountId)
+				slog.Error("deletion failed", "account_id", accountCreds.AccountId, "error", err)
 				results[idx] = rootmanager.DeletionResult{
 					AccountId:      accountCreds.AccountId,
 					CredentialType: credentialType,
@@ -50,11 +50,11 @@ func deleteAccountsCredentials(ctx context.Context, iam aws.IamClient, sts aws.S
 
 // deleteAccountCredentials deletes root credentials for a specific account.
 func deleteAccountCredentials(ctx context.Context, sts aws.StsClient, factory aws.IamClientFactory, creds rootmanager.RootCredentials, credentialType string) error {
-	logger.Trace("service.deleteAccountCredentials", "checking if account %s has %s credentials to delete", credentialType, credentialType)
+	slog.Debug("checking credentials to delete", "account_id", creds.AccountId, "credential_type", credentialType)
 
 	// Check if there are credentials to delete before assuming root
 	if !hasCredentialsToDelete(creds, credentialType) {
-		logger.Info("service.deleteAccountCredentials", "no %s credentials found for account %s", credentialType, creds.AccountId)
+		slog.Info("no credentials found to delete", "account_id", creds.AccountId, "credential_type", credentialType)
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func recoverAccountsRootPassword(ctx context.Context, iam aws.IamClient, sts aws
 			defer wgAccounts.Done()
 			success, err := recoverAccountRootPassowrd(ctx, sts, factory, accId)
 			if err != nil {
-				logger.Error("service.recoverAccountsRootPassword", err, "account %s: recovery failed", accId)
+				slog.Error("recovery failed", "account_id", accId, "error", err)
 				results[idx] = rootmanager.RecoveryResult{
 					AccountId: accId,
 					Success:   false,
@@ -152,7 +152,7 @@ func recoverAccountsRootPassword(ctx context.Context, iam aws.IamClient, sts aws
 
 // Enable the recovery process for root passwords for a specific account
 func recoverAccountRootPassowrd(ctx context.Context, sts aws.StsClient, factory aws.IamClientFactory, accountId string) (bool, error) {
-	logger.Trace("service.recoverAccountRootPassowrd", "trying to recover root password for account %s ", accountId)
+	slog.Debug("trying to recover root password", "account_id", accountId)
 
 	awscfgRecoverRoot, err := sts.GetAssumeRootConfig(ctx, accountId, "IAMCreateRootUserPassword")
 	if err != nil {

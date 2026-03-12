@@ -1,55 +1,45 @@
 package logger
 
 import (
+	"log/slog"
 	"os"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func init() {
-	lvl, ok := os.LookupEnv("LOG_LEVEL")
-	if !ok {
-		lvl = "error" // default
-	}
-
-	ll, err := log.ParseLevel(lvl)
-	if err != nil {
-		ll = log.DebugLevel
-	}
-	log.SetLevel(ll)
-
-	format, ok := os.LookupEnv("LOG_FORMAT")
-	if ok {
-		SetLoggerFormat(format)
-	}
+	lvl := os.Getenv("LOG_LEVEL")
+	format := os.Getenv("LOG_FORMAT")
+	Configure(lvl, format)
 }
 
-func SetLoggerFormat(logFormat string) {
-	switch logFormat {
+// Configure sets up the global slog logger based on the given level and format.
+// This is used by the CLI at startup; external consumers control slog via slog.SetDefault.
+func Configure(level, format string) {
+	slogLevel := parseLevel(level)
+
+	opts := &slog.HandlerOptions{Level: slogLevel, AddSource: true}
+
+	var handler slog.Handler
+	switch format {
 	case "json":
-		log.SetFormatter(&log.JSONFormatter{})
+		handler = slog.NewJSONHandler(os.Stderr, opts)
 	default:
-		log.SetFormatter(&log.TextFormatter{})
+		handler = slog.NewTextHandler(os.Stderr, opts)
 	}
+
+	slog.SetDefault(slog.New(handler))
 }
 
-// Wrap logrus with function name
-func Trace(funcName, format string, args ...any) {
-	log.WithField("function", funcName).Tracef(format, args...)
-}
-
-func Debug(funcName, format string, args ...any) {
-	log.WithField("function", funcName).Debugf(format, args...)
-}
-
-func Info(funcName, format string, args ...any) {
-	log.WithField("function", funcName).Infof(format, args...)
-}
-
-func Warn(funcName, format string, args ...any) {
-	log.WithField("function", funcName).Warnf(format, args...)
-}
-
-func Error(funcName string, err error, format string, args ...any) {
-	log.WithField("function", funcName).WithError(err).Errorf(format, args...)
+func parseLevel(level string) slog.Level {
+	switch level {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelError
+	}
 }

@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
-	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/internal/service"
 
 	"github.com/spf13/cobra"
@@ -19,29 +19,29 @@ func Recovery() *cobra.Command {
 		Short: "Allow root password recovery",
 		Long:  `Retrieve the status of centralized root access settings for an AWS Organization.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger.Trace("cmd.recovery", "recovery called")
+			slog.Debug("recovery called")
 
 			ctx := context.Background()
 			rm, err := service.NewRootManagerFromConfig(ctx)
 			if err != nil {
-				logger.Error("cmd.recovery", err, "failed to initialize root manager")
+				slog.Error("failed to initialize root manager", "error", err)
 				return err
 			}
 
 			targetAccounts, err := ui.SelectTargetAccounts(ctx, accountsFlags)
 			if err != nil {
-				logger.Error("cmd.recovery", err, "failed to get target accounts")
+				slog.Error("failed to get target accounts", "error", err)
 				return err
 			}
 			if len(targetAccounts) == 0 {
-				logger.Info("cmd.recovery", "no accounts selected")
+				slog.Info("no accounts selected")
 				return nil
 			}
-			logger.Debug("cmd.recovery", "selected accounts: %s", strings.Join(targetAccounts, ", "))
+			slog.Debug("selected accounts", "accounts", strings.Join(targetAccounts, ", "))
 
 			results, err := rm.RecoverRootPassword(ctx, targetAccounts)
 			if err != nil {
-				logger.Error("cmd.recovery", err, "failed to recover root password")
+				slog.Error("failed to recover root password", "error", err)
 				return err
 			}
 

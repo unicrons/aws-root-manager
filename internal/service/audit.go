@@ -2,16 +2,16 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 
 	"github.com/unicrons/aws-root-manager/internal/infra/aws"
-	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
 // auditAccounts returns root credentials for a list of AWS accounts.
 func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, factory aws.IamClientFactory, accounts []string) ([]rootmanager.RootCredentials, error) {
-	logger.Trace("service.auditAccounts", "auditing accounts %s", accounts)
+	slog.Debug("auditing accounts", "accounts", accounts)
 
 	rootCredentials := make([]rootmanager.RootCredentials, len(accounts))
 	var wgAccounts sync.WaitGroup
@@ -25,7 +25,7 @@ func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, fa
 		go func(idx int, accountId string) {
 			defer wgAccounts.Done()
 			if accStatus, err := auditAccount(ctx, sts, factory, accountId); err != nil {
-				logger.Error("service.auditAccounts", err, "account %s: audit skipped", accountId)
+				slog.Error("audit skipped", "account_id", accountId, "error", err)
 				rootCredentials[idx] = rootmanager.RootCredentials{AccountId: accountId, Error: err.Error()}
 			} else {
 				rootCredentials[idx] = accStatus
@@ -40,7 +40,7 @@ func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, fa
 
 // Get root credentials for a specific account
 func auditAccount(ctx context.Context, sts aws.StsClient, factory aws.IamClientFactory, accountId string) (rootmanager.RootCredentials, error) {
-	logger.Trace("service.auditAccount", "auditing account %s", accountId)
+	slog.Debug("auditing account", "account_id", accountId)
 
 	awscfgRoot, err := sts.GetAssumeRootConfig(ctx, accountId, "IAMAuditRootUserCredentials")
 	if err != nil {
@@ -54,25 +54,25 @@ func auditAccount(ctx context.Context, sts aws.StsClient, factory aws.IamClientF
 	if err != nil {
 		return accountRootCredentials, err
 	}
-	logger.Debug("service.auditAccounts", "account %s - login_profile: %t", accountId, loginProfile)
+	slog.Debug("audit result", "account_id", accountId, "login_profile", loginProfile)
 
 	accessKeys, err := iamRoot.ListAccessKeys(ctx, accountId)
 	if err != nil {
 		return accountRootCredentials, err
 	}
-	logger.Debug("service.auditAccounts", "account %s - access_keys: %s", accountId, accessKeys)
+	slog.Debug("audit result", "account_id", accountId, "access_keys", accessKeys)
 
 	mfaDevices, err := iamRoot.ListMFADevices(ctx, accountId)
 	if err != nil {
 		return accountRootCredentials, err
 	}
-	logger.Debug("service.auditAccounts", "account %s - mfa_devices: %s", accountId, mfaDevices)
+	slog.Debug("audit result", "account_id", accountId, "mfa_devices", mfaDevices)
 
 	certificates, err := iamRoot.ListSigningCertificates(ctx, accountId)
 	if err != nil {
 		return accountRootCredentials, err
 	}
-	logger.Debug("service.auditAccounts", "account %s - signing_certificates: %s", accountId, certificates)
+	slog.Debug("audit result", "account_id", accountId, "signing_certificates", certificates)
 
 	accountRootCredentials = rootmanager.RootCredentials{
 		AccountId:           accountId,

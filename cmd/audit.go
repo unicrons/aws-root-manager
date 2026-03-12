@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
-	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/internal/service"
 
 	"github.com/spf13/cobra"
@@ -20,29 +20,29 @@ func Audit() *cobra.Command {
 		Long:         `Retrieve available root user credentials for all member accounts within an AWS Organization.`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger.Trace("cmd.audit", "audit called")
+			slog.Debug("audit called")
 
 			ctx := context.Background()
 			rm, err := service.NewRootManagerFromConfig(ctx)
 			if err != nil {
-				logger.Error("cmd.audit", err, "failed to initialize root manager")
+				slog.Error("failed to initialize root manager", "error", err)
 				return err
 			}
 
 			auditAccounts, err := ui.SelectTargetAccounts(ctx, accountsFlags)
 			if err != nil {
-				logger.Error("cmd.audit", err, "failed to get accounts to audit")
+				slog.Error("failed to get accounts to audit", "error", err)
 				return err
 			}
 			if len(auditAccounts) == 0 {
-				logger.Info("cmd.audit", "no accounts selected")
+				slog.Info("no accounts selected")
 				return nil
 			}
-			logger.Debug("cmd.audit", "selected accounts: %s", strings.Join(auditAccounts, ", "))
+			slog.Debug("selected accounts", "accounts", strings.Join(auditAccounts, ", "))
 
 			audit, err := rm.AuditAccounts(ctx, auditAccounts)
 			if err != nil {
-				logger.Error("cmd.audit", err, "failed to audit accounts")
+				slog.Error("failed to audit accounts", "error", err)
 				return err
 			}
 

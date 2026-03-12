@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
-	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/internal/service"
 
 	"github.com/spf13/cobra"
@@ -17,20 +17,20 @@ func Enable() *cobra.Command {
 		Short: "Enable centralized root access",
 		Long:  `Enable centralized root access management in an AWS Organization.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger.Trace("cmd.enable", "enable called")
+			slog.Debug("enable called")
 
 			enableRootSessions, _ := cmd.Flags().GetBool("enableRootSessions")
 
 			ctx := context.Background()
 			rm, err := service.NewRootManagerFromConfig(ctx)
 			if err != nil {
-				logger.Error("cmd.enable", err, "failed to initialize root manager")
+				slog.Error("failed to initialize root manager", "error", err)
 				return err
 			}
 
 			initStatus, status, err := rm.EnableRootAccess(ctx, enableRootSessions)
 			if err != nil {
-				logger.Error("cmd.enable", err, "failed to enable root access")
+				slog.Error("failed to enable root access", "error", err)
 				return err
 			}
 
