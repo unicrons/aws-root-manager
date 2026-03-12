@@ -3,6 +3,8 @@ package cmd
 import (
 	"os"
 
+	"github.com/unicrons/aws-root-manager/internal/logger"
+
 	"github.com/spf13/cobra"
 )
 
@@ -36,6 +38,8 @@ func Execute() {
 }
 
 func init() {
+	logger.Configure(os.Getenv("LOG_LEVEL"), os.Getenv("LOG_FORMAT"))
+
 	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "table", "Set the output format (table, json, csv)")
 	rootCmd.AddCommand(Audit())
 	rootCmd.AddCommand(Check())

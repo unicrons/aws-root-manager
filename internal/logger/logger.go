@@ -5,14 +5,7 @@ import (
 	"os"
 )
 
-func init() {
-	lvl := os.Getenv("LOG_LEVEL")
-	format := os.Getenv("LOG_FORMAT")
-	Configure(lvl, format)
-}
-
 // Configure sets up the global slog logger based on the given level and format.
-// This is used by the CLI at startup; external consumers control slog via slog.SetDefault.
 func Configure(level, format string) {
 	slogLevel := parseLevel(level)
 
