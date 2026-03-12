@@ -79,8 +79,6 @@ func (c *iamClient) DeleteLoginProfile(ctx context.Context, accountId string) er
 		return fmt.Errorf("error deleting root login profile for account %s: %w", accountId, err)
 	}
 
-	slog.Info("successfully deleted login profile", "account_id", accountId)
-
 	return nil
 }
 
@@ -114,8 +112,6 @@ func (c *iamClient) DeleteAccessKeys(ctx context.Context, accountId string, acce
 		}
 	}
 
-	slog.Info("successfully deleted access keys", "account_id", accountId)
-
 	return nil
 }
 
@@ -147,8 +143,6 @@ func (c *iamClient) DeactivateMFADevices(ctx context.Context, accountId string, 
 		}
 	}
 
-	slog.Info("successfully deactivated mfa devices", "account_id", accountId)
-
 	return nil
 }
 
@@ -179,8 +173,6 @@ func (c *iamClient) DeleteSigningCertificates(ctx context.Context, accountId str
 		}
 	}
 
-	slog.Info("successfully deleted signing certificates", "account_id", accountId)
-
 	return nil
 }
 
@@ -193,8 +185,6 @@ func (c *iamClient) EnableOrganizationsRootCredentialsManagement(ctx context.Con
 		return fmt.Errorf("error enabling organization root credentials management: %w", err)
 	}
 
-	slog.Info("successfully enabled organization root credentials management")
-
 	return nil
 }
 
@@ -206,8 +196,6 @@ func (c *iamClient) EnableOrganizationsRootSessions(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error enabling organization root sessions: %w", err)
 	}
-
-	slog.Info("successfully enabled organization root sessions management")
 
 	return nil
 }
@@ -225,8 +213,6 @@ func (c *iamClient) CreateLoginProfile(ctx context.Context) error {
 		}
 		return fmt.Errorf("error creating login profile: %w", err)
 	}
-
-	slog.Info("successfully created login profile")
 
 	return nil
 }

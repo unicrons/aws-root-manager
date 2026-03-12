@@ -25,7 +25,6 @@ func deleteAccountsCredentials(ctx context.Context, iam aws.IamClient, sts aws.S
 		go func(idx int, accountCreds rootmanager.RootCredentials) {
 			defer wgAccounts.Done()
 			if err := deleteAccountCredentials(ctx, sts, factory, accountCreds, credentialType); err != nil {
-				slog.Error("deletion failed", "account_id", accountCreds.AccountId, "error", err)
 				results[idx] = rootmanager.DeletionResult{
 					AccountId:      accountCreds.AccountId,
 					CredentialType: credentialType,
@@ -54,7 +53,6 @@ func deleteAccountCredentials(ctx context.Context, sts aws.StsClient, factory aw
 
 	// Check if there are credentials to delete before assuming root
 	if !hasCredentialsToDelete(creds, credentialType) {
-		slog.Info("no credentials found to delete", "account_id", creds.AccountId, "credential_type", credentialType)
 		return nil
 	}
 
@@ -129,7 +127,6 @@ func recoverAccountsRootPassword(ctx context.Context, iam aws.IamClient, sts aws
 			defer wgAccounts.Done()
 			success, err := recoverAccountRootPassowrd(ctx, sts, factory, accId)
 			if err != nil {
-				slog.Error("recovery failed", "account_id", accId, "error", err)
 				results[idx] = rootmanager.RecoveryResult{
 					AccountId: accId,
 					Success:   false,

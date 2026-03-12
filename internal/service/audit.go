@@ -25,7 +25,6 @@ func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, fa
 		go func(idx int, accountId string) {
 			defer wgAccounts.Done()
 			if accStatus, err := auditAccount(ctx, sts, factory, accountId); err != nil {
-				slog.Error("audit skipped", "account_id", accountId, "error", err)
 				rootCredentials[idx] = rootmanager.RootCredentials{AccountId: accountId, Error: err.Error()}
 			} else {
 				rootCredentials[idx] = accStatus
