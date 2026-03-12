@@ -14,17 +14,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
 )
 
-type IamClient struct {
+type iamClient struct {
 	client *iam.Client
 }
 
-func NewIamClient(awscfg aws.Config) *IamClient {
+func NewIamClient(awscfg aws.Config) IamClient {
 	client := iam.NewFromConfig(awscfg)
-	return &IamClient{client: client}
+	return &iamClient{client: client}
 }
 
 // Verifies if AWS centralized root access is enabled
-func (c *IamClient) CheckOrganizationRootAccess(ctx context.Context, rootSessionsRequired bool) error {
+func (c *iamClient) CheckOrganizationRootAccess(ctx context.Context, rootSessionsRequired bool) error {
 	logger.Trace("aws.CheckOrganizationRootAccess", "checking if organization root access is enabled")
 
 	features, err := c.client.ListOrganizationsFeatures(ctx, &iam.ListOrganizationsFeaturesInput{})
@@ -54,7 +54,7 @@ func (c *IamClient) CheckOrganizationRootAccess(ctx context.Context, rootSession
 }
 
 // Check if an account has root login profile enabled
-func (c *IamClient) GetLoginProfile(ctx context.Context, accountId string) (bool, error) {
+func (c *iamClient) GetLoginProfile(ctx context.Context, accountId string) (bool, error) {
 	logger.Debug("aws.GetLoginProfile", "getting login profile for account %s", accountId)
 
 	_, err := c.client.GetLoginProfile(ctx, &iam.GetLoginProfileInput{})
@@ -71,7 +71,7 @@ func (c *IamClient) GetLoginProfile(ctx context.Context, accountId string) (bool
 }
 
 // Delete root login profile for a specific account
-func (c *IamClient) DeleteLoginProfile(ctx context.Context, accountId string) error {
+func (c *iamClient) DeleteLoginProfile(ctx context.Context, accountId string) error {
 	logger.Debug("aws.DeleteLoginProfile", "deleting login profile for account %s", accountId)
 
 	_, err := c.client.DeleteLoginProfile(ctx, &iam.DeleteLoginProfileInput{})
@@ -85,7 +85,7 @@ func (c *IamClient) DeleteLoginProfile(ctx context.Context, accountId string) er
 }
 
 // Get a list of root access keys for a specific account
-func (c *IamClient) ListAccessKeys(ctx context.Context, accountId string) ([]string, error) {
+func (c *iamClient) ListAccessKeys(ctx context.Context, accountId string) ([]string, error) {
 	logger.Debug("aws.ListAccessKeys", "listing access keys for account %s", accountId)
 
 	accessKeys, err := c.client.ListAccessKeys(ctx, &iam.ListAccessKeysInput{})
@@ -102,7 +102,7 @@ func (c *IamClient) ListAccessKeys(ctx context.Context, accountId string) ([]str
 }
 
 // Delete a list of root access for a specific account
-func (c *IamClient) DeleteAccessKeys(ctx context.Context, accountId string, accessKeyIds []string) error {
+func (c *iamClient) DeleteAccessKeys(ctx context.Context, accountId string, accessKeyIds []string) error {
 	logger.Debug("aws.DeleteAccessKeys", "deleting root access key %s for account %s", accessKeyIds, accountId)
 
 	for _, accessKeyId := range accessKeyIds {
@@ -120,7 +120,7 @@ func (c *IamClient) DeleteAccessKeys(ctx context.Context, accountId string, acce
 }
 
 // Get a list of root MFA devices for a specific account
-func (c *IamClient) ListMFADevices(ctx context.Context, accountId string) ([]string, error) {
+func (c *iamClient) ListMFADevices(ctx context.Context, accountId string) ([]string, error) {
 	mfaDevices, err := c.client.ListMFADevices(ctx, &iam.ListMFADevicesInput{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing root mfa devices for account %s: %w", accountId, err)
@@ -135,7 +135,7 @@ func (c *IamClient) ListMFADevices(ctx context.Context, accountId string) ([]str
 }
 
 // Deactivate a list of root MFA devices for a specific account
-func (c *IamClient) DeactivateMFADevices(ctx context.Context, accountId string, mfaSerialNumbers []string) error {
+func (c *iamClient) DeactivateMFADevices(ctx context.Context, accountId string, mfaSerialNumbers []string) error {
 	logger.Debug("aws.DeactivateMFADevices", "deleting root mfa device %s for account %s", mfaSerialNumbers, accountId)
 
 	for _, mfaSerialNumber := range mfaSerialNumbers {
@@ -153,7 +153,7 @@ func (c *IamClient) DeactivateMFADevices(ctx context.Context, accountId string, 
 }
 
 // Get a list of root signing certificates devices for a specific account
-func (c *IamClient) ListSigningCertificates(ctx context.Context, accountId string) ([]string, error) {
+func (c *iamClient) ListSigningCertificates(ctx context.Context, accountId string) ([]string, error) {
 	certificates, err := c.client.ListSigningCertificates(ctx, &iam.ListSigningCertificatesInput{})
 	if err != nil {
 		return nil, fmt.Errorf("error listing signing certificates for account %s: %w", accountId, err)
@@ -168,7 +168,7 @@ func (c *IamClient) ListSigningCertificates(ctx context.Context, accountId strin
 }
 
 // Delete a list of root signing certificates for a specific account
-func (c *IamClient) DeleteSigningCertificates(ctx context.Context, accountId string, certificates []string) error {
+func (c *iamClient) DeleteSigningCertificates(ctx context.Context, accountId string, certificates []string) error {
 	logger.Debug("aws.DeleteSigningCertificates", "deleting singin certificates %s for account %s", certificates, accountId)
 
 	for _, certificate := range certificates {
@@ -187,7 +187,7 @@ func (c *IamClient) DeleteSigningCertificates(ctx context.Context, accountId str
 }
 
 // Enable centralized root credentials management
-func (c *IamClient) EnableOrganizationsRootCredentialsManagement(ctx context.Context) error {
+func (c *iamClient) EnableOrganizationsRootCredentialsManagement(ctx context.Context) error {
 	logger.Debug("aws.EnableOrganizationsRootCredentialsManagement", "enabling organization root credentials management")
 
 	_, err := c.client.EnableOrganizationsRootCredentialsManagement(ctx, &iam.EnableOrganizationsRootCredentialsManagementInput{})
@@ -201,7 +201,7 @@ func (c *IamClient) EnableOrganizationsRootCredentialsManagement(ctx context.Con
 }
 
 // Enable centralized root sessions
-func (c *IamClient) EnableOrganizationsRootSessions(ctx context.Context) error {
+func (c *iamClient) EnableOrganizationsRootSessions(ctx context.Context) error {
 	logger.Debug("aws.EnableOrganizationsRootSessions", "enabling organization root sessions")
 
 	_, err := c.client.EnableOrganizationsRootSessions(ctx, &iam.EnableOrganizationsRootSessionsInput{})
@@ -215,7 +215,7 @@ func (c *IamClient) EnableOrganizationsRootSessions(ctx context.Context) error {
 }
 
 // Allow root password recovery
-func (c *IamClient) CreateLoginProfile(ctx context.Context) error {
+func (c *iamClient) CreateLoginProfile(ctx context.Context) error {
 	logger.Debug("aws.createLoginProfile", "creating loggin profile")
 
 	_, err := c.client.CreateLoginProfile(ctx, &iam.CreateLoginProfileInput{})

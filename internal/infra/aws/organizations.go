@@ -11,13 +11,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 )
 
-type OrganizationsClient struct {
+type organizationsClient struct {
 	client *organizations.Client
 }
 
-func NewOrganizationsClient(awscfg aws.Config) *OrganizationsClient {
+func NewOrganizationsClient(awscfg aws.Config) OrganizationsClient {
 	client := organizations.NewFromConfig(awscfg)
-	return &OrganizationsClient{client: client}
+	return &organizationsClient{client: client}
 }
 
 type OrganizationAccount struct {
@@ -34,14 +34,14 @@ func GetNonManagementOrganizationAccounts(ctx context.Context) ([]OrganizationAc
 		return nil, fmt.Errorf("failed to load aws config: %w", err)
 	}
 
-	organizations := NewOrganizationsClient(awscfg)
+	orgs := NewOrganizationsClient(awscfg)
 
-	mgmAccount, err := organizations.describeOrganization(ctx)
+	mgmAccount, err := orgs.(*organizationsClient).describeOrganization(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	orgAccounts, err := organizations.listOrganizationAccounts()
+	orgAccounts, err := orgs.(*organizationsClient).listOrganizationAccounts()
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func GetNonManagementOrganizationAccounts(ctx context.Context) ([]OrganizationAc
 	return nonManagementOrgAccounts, nil
 }
 
-func (c *OrganizationsClient) listOrganizationAccounts() ([]types.Account, error) {
+func (c *organizationsClient) listOrganizationAccounts() ([]types.Account, error) {
 	logger.Trace("aws.listOrganizationAccounts", "listing organization accounts")
 
 	params := &organizations.ListAccountsInput{}
@@ -79,7 +79,7 @@ func (c *OrganizationsClient) listOrganizationAccounts() ([]types.Account, error
 	return allAccounts, nil
 }
 
-func (c *OrganizationsClient) describeOrganization(ctx context.Context) (string, error) {
+func (c *organizationsClient) describeOrganization(ctx context.Context) (string, error) {
 	logger.Trace("aws.describeOrganization", "describing organization")
 
 	organization, err := c.client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
@@ -90,7 +90,7 @@ func (c *OrganizationsClient) describeOrganization(ctx context.Context) (string,
 	return *organization.Organization.MasterAccountId, nil
 }
 
-func (c *OrganizationsClient) EnableAWSServiceAccess(ctx context.Context, service string) error {
+func (c *organizationsClient) EnableAWSServiceAccess(ctx context.Context, service string) error {
 	logger.Trace("aws.EnableAWSServiceAccess", "enabling %s service access", service)
 
 	_, err := c.client.EnableAWSServiceAccess(ctx, &organizations.EnableAWSServiceAccessInput{

@@ -10,7 +10,7 @@ import (
 )
 
 // auditAccounts returns root credentials for a list of AWS accounts.
-func auditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accounts []string) ([]rootmanager.RootCredentials, error) {
+func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, factory aws.IamClientFactory, accounts []string) ([]rootmanager.RootCredentials, error) {
 	logger.Trace("service.auditAccounts", "auditing accounts %s", accounts)
 
 	rootCredentials := make([]rootmanager.RootCredentials, len(accounts))
@@ -24,7 +24,7 @@ func auditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, 
 		wgAccounts.Add(1)
 		go func(idx int, accountId string) {
 			defer wgAccounts.Done()
-			if accStatus, err := auditAccount(ctx, sts, accountId); err != nil {
+			if accStatus, err := auditAccount(ctx, sts, factory, accountId); err != nil {
 				logger.Error("service.auditAccounts", err, "account %s: audit skipped", accountId)
 				rootCredentials[idx] = rootmanager.RootCredentials{AccountId: accountId, Error: err.Error()}
 			} else {
@@ -39,7 +39,7 @@ func auditAccounts(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, 
 }
 
 // Get root credentials for a specific account
-func auditAccount(ctx context.Context, sts *aws.StsClient, accountId string) (rootmanager.RootCredentials, error) {
+func auditAccount(ctx context.Context, sts aws.StsClient, factory aws.IamClientFactory, accountId string) (rootmanager.RootCredentials, error) {
 	logger.Trace("service.auditAccount", "auditing account %s", accountId)
 
 	awscfgRoot, err := sts.GetAssumeRootConfig(ctx, accountId, "IAMAuditRootUserCredentials")
@@ -47,7 +47,7 @@ func auditAccount(ctx context.Context, sts *aws.StsClient, accountId string) (ro
 		return rootmanager.RootCredentials{}, err
 	}
 
-	iamRoot := aws.NewIamClient(awscfgRoot)
+	iamRoot := factory.NewIamClient(awscfgRoot)
 	var accountRootCredentials rootmanager.RootCredentials
 
 	loginProfile, err := iamRoot.GetLoginProfile(ctx, accountId)

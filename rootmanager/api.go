@@ -20,10 +20,11 @@ type RootManager interface {
 	// DeleteCredentials deletes root credentials for the specified accounts.
 	// The creds parameter should contain audit results identifying what credentials exist.
 	// The credentialType parameter specifies what to delete: "all", "login", "keys", "mfa", or "certificate".
-	DeleteCredentials(ctx context.Context, creds []RootCredentials, credentialType string) error
+	// Returns a slice of DeletionResult showing the outcome for each account.
+	DeleteCredentials(ctx context.Context, creds []RootCredentials, credentialType string) ([]DeletionResult, error)
 
 	// RecoverRootPassword initiates root password recovery for the specified accounts.
 	// This triggers AWS to send password reset emails to the account's root email address.
-	// Returns a map of account ID to success status, and any error encountered.
-	RecoverRootPassword(ctx context.Context, accountIds []string) (map[string]bool, error)
+	// Returns a slice of RecoveryResult showing the outcome for each account.
+	RecoverRootPassword(ctx context.Context, accountIds []string) ([]RecoveryResult, error)
 }

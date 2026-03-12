@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
-	"github.com/unicrons/aws-root-manager/internal/infra/aws"
 	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/internal/service"
 
@@ -22,9 +22,9 @@ func Recovery() *cobra.Command {
 			logger.Trace("cmd.recovery", "recovery called")
 
 			ctx := context.Background()
-			awscfg, err := aws.LoadAWSConfig(ctx)
+			rm, err := service.NewRootManagerFromConfig(ctx)
 			if err != nil {
-				logger.Error("cmd.recovery", err, "failed to load aws config")
+				logger.Error("cmd.recovery", err, "failed to initialize root manager")
 				return err
 			}
 
@@ -39,24 +39,36 @@ func Recovery() *cobra.Command {
 			}
 			logger.Debug("cmd.recovery", "selected accounts: %s", strings.Join(targetAccounts, ", "))
 
-			rm := service.NewRootManager(aws.NewIamClient(awscfg), aws.NewStsClient(awscfg), aws.NewOrganizationsClient(awscfg))
-			resultMap, err := rm.RecoverRootPassword(ctx, targetAccounts)
+			results, err := rm.RecoverRootPassword(ctx, targetAccounts)
 			if err != nil {
 				logger.Error("cmd.recovery", err, "failed to recover root password")
 				return err
 			}
 
-			headers := []string{"Account", "Login Profile"}
+			headers := []string{"Account", "Login Profile", "Error"}
 			var data [][]any
-			for acc, success := range resultMap {
+			var failureCount int
+			for _, result := range results {
 				status := "recovered"
-				if !success {
-					status = "already exists"
+				errorMsg := ""
+				if !result.Success {
+					if result.Error != "" {
+						status = "failed"
+						errorMsg = result.Error
+						failureCount++
+					} else {
+						status = "already exists"
+					}
 				}
-				data = append(data, []any{acc, status})
+				data = append(data, []any{result.AccountId, status, errorMsg})
 			}
 
 			output.HandleOutput(outputFlag, headers, data)
+
+			if failureCount > 0 {
+				return fmt.Errorf("recovery failed for %d account(s)", failureCount)
+			}
+
 			return nil
 		},
 	}

@@ -21,4 +21,13 @@ type RootCredentials struct {
 type RecoveryResult struct {
 	AccountId string // AWS account ID
 	Success   bool   // Whether recovery email was successfully sent
+	Error     string // Error message if recovery failed (empty if Success=true)
+}
+
+// DeletionResult represents the result of a credential deletion operation for an account.
+type DeletionResult struct {
+	AccountId      string // AWS account ID
+	CredentialType string // Type of credential deleted (login, keys, mfa, certificate, all)
+	Success        bool   // Whether deletion was successful
+	Error          string // Error message if deletion failed (empty if Success=true)
 }

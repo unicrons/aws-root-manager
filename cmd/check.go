@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
-	"github.com/unicrons/aws-root-manager/internal/infra/aws"
 	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/internal/service"
 
@@ -21,13 +20,12 @@ func Check() *cobra.Command {
 			logger.Trace("cmd.check", "check called")
 
 			ctx := context.Background()
-			awscfg, err := aws.LoadAWSConfig(ctx)
+			rm, err := service.NewRootManagerFromConfig(ctx)
 			if err != nil {
-				logger.Error("cmd.check", err, "failed to load aws config")
+				logger.Error("cmd.check", err, "failed to initialize root manager")
 				return err
 			}
 
-			rm := service.NewRootManager(aws.NewIamClient(awscfg), nil, nil)
 			status, err := rm.CheckRootAccess(ctx)
 			if err != nil {
 				logger.Error("cmd.check", err, "failed to check root access configuration")

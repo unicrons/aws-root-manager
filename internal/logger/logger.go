@@ -6,7 +6,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func init() {
+// logrusLogger implements the Logger interface using logrus.
+type logrusLogger struct {
+	logger *log.Logger
+}
+
+// New creates a new Logger instance configured from environment variables.
+func New() Logger {
+	logger := log.New()
+
 	lvl, ok := os.LookupEnv("LOG_LEVEL")
 	if !ok {
 		lvl = "error" // default
@@ -16,15 +24,56 @@ func init() {
 	if err != nil {
 		ll = log.DebugLevel
 	}
-	log.SetLevel(ll)
+	logger.SetLevel(ll)
 
 	format, ok := os.LookupEnv("LOG_FORMAT")
 	if ok {
-		SetLoggerFormat(format)
+		setLoggerFormat(logger, format)
+	}
+
+	return &logrusLogger{logger: logger}
+}
+
+func setLoggerFormat(logger *log.Logger, logFormat string) {
+	switch logFormat {
+	case "json":
+		logger.SetFormatter(&log.JSONFormatter{})
+	default:
+		logger.SetFormatter(&log.TextFormatter{})
 	}
 }
 
+func (l *logrusLogger) Trace(funcName, format string, args ...any) {
+	l.logger.WithField("function", funcName).Tracef(format, args...)
+}
+
+func (l *logrusLogger) Debug(funcName, format string, args ...any) {
+	l.logger.WithField("function", funcName).Debugf(format, args...)
+}
+
+func (l *logrusLogger) Info(funcName, format string, args ...any) {
+	l.logger.WithField("function", funcName).Infof(format, args...)
+}
+
+func (l *logrusLogger) Warn(funcName, format string, args ...any) {
+	l.logger.WithField("function", funcName).Warnf(format, args...)
+}
+
+func (l *logrusLogger) Error(funcName string, err error, format string, args ...any) {
+	l.logger.WithField("function", funcName).WithError(err).Errorf(format, args...)
+}
+
+// Global logger functions for backward compatibility
+// These will be deprecated once all code uses dependency injection
+
+var defaultLogger Logger
+
+func init() {
+	defaultLogger = New()
+}
+
 func SetLoggerFormat(logFormat string) {
+	// For backward compatibility with existing code
 	switch logFormat {
 	case "json":
 		log.SetFormatter(&log.JSONFormatter{})
@@ -33,23 +82,23 @@ func SetLoggerFormat(logFormat string) {
 	}
 }
 
-// Wrap logrus with function name
+// Wrap logrus with function name - global functions for backward compatibility
 func Trace(funcName, format string, args ...any) {
-	log.WithField("function", funcName).Tracef(format, args...)
+	defaultLogger.Trace(funcName, format, args...)
 }
 
 func Debug(funcName, format string, args ...any) {
-	log.WithField("function", funcName).Debugf(format, args...)
+	defaultLogger.Debug(funcName, format, args...)
 }
 
 func Info(funcName, format string, args ...any) {
-	log.WithField("function", funcName).Infof(format, args...)
+	defaultLogger.Info(funcName, format, args...)
 }
 
 func Warn(funcName, format string, args ...any) {
-	log.WithField("function", funcName).Warnf(format, args...)
+	defaultLogger.Warn(funcName, format, args...)
 }
 
 func Error(funcName string, err error, format string, args ...any) {
-	log.WithField("function", funcName).WithError(err).Errorf(format, args...)
+	defaultLogger.Error(funcName, err, format, args...)
 }

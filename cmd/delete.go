@@ -7,7 +7,6 @@ import (
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
-	"github.com/unicrons/aws-root-manager/internal/infra/aws"
 	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/internal/service"
 
@@ -47,9 +46,9 @@ func deleteSubcommand(use, short, long string) *cobra.Command {
 
 func runDelete(accountsFlags []string, credentialType string) error {
 	ctx := context.Background()
-	awscfg, err := aws.LoadAWSConfig(ctx)
+	rm, err := service.NewRootManagerFromConfig(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to load aws config: %w", err)
+		return fmt.Errorf("failed to initialize root manager: %w", err)
 	}
 
 	auditAccounts, err := ui.SelectTargetAccounts(ctx, accountsFlags)
@@ -57,31 +56,44 @@ func runDelete(accountsFlags []string, credentialType string) error {
 		return fmt.Errorf("failed to get accounts to audit: %w", err)
 	}
 	if len(auditAccounts) == 0 {
-		logger.Info("cmd.audit", "no accounts selected")
+		logger.Info("cmd.delete", "no accounts selected")
 		return nil
 	}
-	logger.Debug("cmd.audit", "selected accounts: %s", strings.Join(auditAccounts, ", "))
+	logger.Debug("cmd.delete", "selected accounts: %s", strings.Join(auditAccounts, ", "))
 
-	rm := service.NewRootManager(aws.NewIamClient(awscfg), aws.NewStsClient(awscfg), aws.NewOrganizationsClient(awscfg))
 	audit, err := rm.AuditAccounts(ctx, auditAccounts)
 	if err != nil {
 		return err
 	}
 
-	if err = rm.DeleteCredentials(ctx, audit, credentialType); err != nil {
+	results, err := rm.DeleteCredentials(ctx, audit, credentialType)
+	if err != nil {
 		return err
 	}
 
-	headers := []string{"Account", "CredentialType", "Status"}
+	headers := []string{"Account", "CredentialType", "Status", "Error"}
 	var data [][]any
-	for _, account := range auditAccounts {
+	var failureCount int
+	for _, result := range results {
+		status := "deleted"
+		errorMsg := ""
+		if !result.Success {
+			status = "failed"
+			errorMsg = result.Error
+			failureCount++
+		}
 		data = append(data, []any{
-			account,
-			credentialType,
-			"deleted", // TODO: this is not real
+			result.AccountId,
+			result.CredentialType,
+			status,
+			errorMsg,
 		})
 	}
 	output.HandleOutput(outputFlag, headers, data)
+
+	if failureCount > 0 {
+		return fmt.Errorf("deletion failed for %d account(s)", failureCount)
+	}
 
 	return nil
 }

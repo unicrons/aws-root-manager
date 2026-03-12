@@ -13,16 +13,16 @@ import (
 
 const rootPolicyPrefix = "arn:aws:iam::aws:policy/root-task/"
 
-type StsClient struct {
+type stsClient struct {
 	client *sts.Client
 }
 
-func NewStsClient(awscfg aws.Config) *StsClient {
+func NewStsClient(awscfg aws.Config) StsClient {
 	client := sts.NewFromConfig(awscfg)
-	return &StsClient{client: client}
+	return &stsClient{client: client}
 }
 
-func (c *StsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPolicyName string) (aws.Config, error) {
+func (c *stsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPolicyName string) (aws.Config, error) {
 	logger.Trace("aws.GetAssumeRootConfig", "getting root aws.config account %s and task %s", accountId, taskPolicyName)
 
 	stsCreds, err := c.assumeRoot(ctx, accountId, taskPolicyName)
@@ -48,7 +48,7 @@ func (c *StsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPoli
 	return awsrootcfg, nil
 }
 
-func (c *StsClient) assumeRoot(ctx context.Context, accountId, taskPolicyName string) (types.Credentials, error) {
+func (c *stsClient) assumeRoot(ctx context.Context, accountId, taskPolicyName string) (types.Credentials, error) {
 	logger.Trace("aws.assumeRoot", "assuming root for account %s and task %s", accountId, taskPolicyName)
 
 	params := &sts.AssumeRootInput{

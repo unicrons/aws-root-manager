@@ -11,38 +11,45 @@ import (
 )
 
 // deleteAccountsCredentials deletes root credentials for a list of AWS accounts.
-func deleteAccountsCredentials(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, creds []rootmanager.RootCredentials, credentialType string) error {
-	var (
-		wgAccounts sync.WaitGroup
-		errChan    = make(chan error, len(creds))
-	)
-
+// Returns a slice of DeletionResult containing the outcome for each account.
+func deleteAccountsCredentials(ctx context.Context, iam aws.IamClient, sts aws.StsClient, factory aws.IamClientFactory, creds []rootmanager.RootCredentials, credentialType string) ([]rootmanager.DeletionResult, error) {
 	if err := iam.CheckOrganizationRootAccess(ctx, false); err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, accountCredentials := range creds {
+	results := make([]rootmanager.DeletionResult, len(creds))
+	var wgAccounts sync.WaitGroup
+
+	for i, accountCredentials := range creds {
 		wgAccounts.Add(1)
-		go func(accountCreds rootmanager.RootCredentials) {
+		go func(idx int, accountCreds rootmanager.RootCredentials) {
 			defer wgAccounts.Done()
-			if err := deleteAccountCredentials(ctx, sts, accountCreds, credentialType); err != nil {
-				errChan <- err
+			if err := deleteAccountCredentials(ctx, sts, factory, accountCreds, credentialType); err != nil {
+				logger.Error("service.deleteAccountsCredentials", err, "account %s: deletion failed", accountCreds.AccountId)
+				results[idx] = rootmanager.DeletionResult{
+					AccountId:      accountCreds.AccountId,
+					CredentialType: credentialType,
+					Success:        false,
+					Error:          err.Error(),
+				}
+			} else {
+				results[idx] = rootmanager.DeletionResult{
+					AccountId:      accountCreds.AccountId,
+					CredentialType: credentialType,
+					Success:        true,
+					Error:          "",
+				}
 			}
-		}(accountCredentials)
+		}(i, accountCredentials)
 	}
 
 	wgAccounts.Wait()
-	close(errChan)
 
-	if len(errChan) > 0 {
-		return <-errChan
-	}
-
-	return nil
+	return results, nil
 }
 
 // deleteAccountCredentials deletes root credentials for a specific account.
-func deleteAccountCredentials(ctx context.Context, sts *aws.StsClient, creds rootmanager.RootCredentials, credentialType string) error {
+func deleteAccountCredentials(ctx context.Context, sts aws.StsClient, factory aws.IamClientFactory, creds rootmanager.RootCredentials, credentialType string) error {
 	logger.Trace("service.deleteAccountCredentials", "checking if account %s has %s credentials to delete", credentialType, credentialType)
 
 	// Check if there are credentials to delete before assuming root
@@ -55,7 +62,7 @@ func deleteAccountCredentials(ctx context.Context, sts *aws.StsClient, creds roo
 	if err != nil {
 		return err
 	}
-	iamDeleteRoot := aws.NewIamClient(awscfgDeleteRoot)
+	iamDeleteRoot := factory.NewIamClient(awscfgDeleteRoot)
 
 	if creds.LoginProfile && (credentialType == "all" || credentialType == "login") {
 		err = iamDeleteRoot.DeleteLoginProfile(ctx, creds.AccountId)
@@ -107,54 +114,51 @@ func hasCredentialsToDelete(creds rootmanager.RootCredentials, credentialType st
 }
 
 // recoverAccountsRootPassword initiates root password recovery for a list of AWS accounts.
-func recoverAccountsRootPassword(ctx context.Context, iam *aws.IamClient, sts *aws.StsClient, accountIds []string) (map[string]bool, error) {
-	var (
-		wgAccounts sync.WaitGroup
-		results    = sync.Map{}
-		errChan    = make(chan error, len(accountIds))
-	)
-
+// Returns a slice of RecoveryResult containing the outcome for each account.
+func recoverAccountsRootPassword(ctx context.Context, iam aws.IamClient, sts aws.StsClient, factory aws.IamClientFactory, accountIds []string) ([]rootmanager.RecoveryResult, error) {
 	if err := iam.CheckOrganizationRootAccess(ctx, false); err != nil {
 		return nil, err
 	}
 
-	for _, acc := range accountIds {
+	results := make([]rootmanager.RecoveryResult, len(accountIds))
+	var wgAccounts sync.WaitGroup
+
+	for i, accountId := range accountIds {
 		wgAccounts.Add(1)
-		go func(accountId string) {
+		go func(idx int, accId string) {
 			defer wgAccounts.Done()
-			success, err := recoverAccountRootPassowrd(ctx, sts, acc)
-			results.Store(accountId, success)
+			success, err := recoverAccountRootPassowrd(ctx, sts, factory, accId)
 			if err != nil {
-				errChan <- err
+				logger.Error("service.recoverAccountsRootPassword", err, "account %s: recovery failed", accId)
+				results[idx] = rootmanager.RecoveryResult{
+					AccountId: accId,
+					Success:   false,
+					Error:     err.Error(),
+				}
+			} else {
+				results[idx] = rootmanager.RecoveryResult{
+					AccountId: accId,
+					Success:   success,
+					Error:     "",
+				}
 			}
-		}(acc)
+		}(i, accountId)
 	}
 
 	wgAccounts.Wait()
-	close(errChan)
 
-	resultMap := make(map[string]bool)
-	results.Range(func(key, value any) bool {
-		resultMap[key.(string)] = value.(bool)
-		return true
-	})
-
-	if len(errChan) > 0 {
-		return resultMap, <-errChan
-	}
-
-	return resultMap, nil
+	return results, nil
 }
 
 // Enable the recovery process for root passwords for a specific account
-func recoverAccountRootPassowrd(ctx context.Context, sts *aws.StsClient, accountId string) (bool, error) {
+func recoverAccountRootPassowrd(ctx context.Context, sts aws.StsClient, factory aws.IamClientFactory, accountId string) (bool, error) {
 	logger.Trace("service.recoverAccountRootPassowrd", "trying to recover root password for account %s ", accountId)
 
 	awscfgRecoverRoot, err := sts.GetAssumeRootConfig(ctx, accountId, "IAMCreateRootUserPassword")
 	if err != nil {
 		return false, err
 	}
-	iamRecoverRoot := aws.NewIamClient(awscfgRecoverRoot)
+	iamRecoverRoot := factory.NewIamClient(awscfgRecoverRoot)
 
 	err = iamRecoverRoot.CreateLoginProfile(ctx)
 	if err != nil {

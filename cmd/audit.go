@@ -7,7 +7,6 @@ import (
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
-	"github.com/unicrons/aws-root-manager/internal/infra/aws"
 	"github.com/unicrons/aws-root-manager/internal/logger"
 	"github.com/unicrons/aws-root-manager/internal/service"
 
@@ -24,9 +23,9 @@ func Audit() *cobra.Command {
 			logger.Trace("cmd.audit", "audit called")
 
 			ctx := context.Background()
-			awscfg, err := aws.LoadAWSConfig(ctx)
+			rm, err := service.NewRootManagerFromConfig(ctx)
 			if err != nil {
-				logger.Error("cmd.audit", err, "failed to load aws config")
+				logger.Error("cmd.audit", err, "failed to initialize root manager")
 				return err
 			}
 
@@ -41,7 +40,6 @@ func Audit() *cobra.Command {
 			}
 			logger.Debug("cmd.audit", "selected accounts: %s", strings.Join(auditAccounts, ", "))
 
-			rm := service.NewRootManager(aws.NewIamClient(awscfg), aws.NewStsClient(awscfg), aws.NewOrganizationsClient(awscfg))
 			audit, err := rm.AuditAccounts(ctx, auditAccounts)
 			if err != nil {
 				logger.Error("cmd.audit", err, "failed to audit accounts")
