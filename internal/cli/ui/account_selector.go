@@ -23,8 +23,15 @@ func SelectTargetAccounts(ctx context.Context, accountsFlag []string) ([]string,
 		return accountsFlag, nil
 	}
 
+	// create organizations client to fetch accounts
+	awscfg, err := aws.LoadAWSConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load aws config: %w", err)
+	}
+	org := aws.NewOrganizationsClient(awscfg)
+
 	// fetch all non-management accounts
-	orgAccounts, err := aws.GetNonManagementOrganizationAccounts(ctx)
+	orgAccounts, err := aws.GetNonManagementOrganizationAccounts(ctx, org)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching organization accounts: %w", err)
 	}

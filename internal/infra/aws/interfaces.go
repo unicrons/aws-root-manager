@@ -56,6 +56,12 @@ type StsClient interface {
 // OrganizationsClient defines the interface for AWS Organizations operations.
 // This interface enables mocking and dependency injection for testing.
 type OrganizationsClient interface {
+	// DescribeOrganization returns the management account ID of the organization
+	DescribeOrganization(ctx context.Context) (string, error)
+
+	// ListAccounts returns all accounts in the organization
+	ListAccounts(ctx context.Context) ([]OrganizationAccount, error)
+
 	// EnableAWSServiceAccess enables AWS service access for the organization
 	EnableAWSServiceAccess(ctx context.Context, service string) error
 }

@@ -24,61 +24,31 @@ type OrganizationAccount struct {
 	AccountID string
 }
 
-// Fetches AWS Organization accounts, excluding the management account
-func GetNonManagementOrganizationAccounts(ctx context.Context) ([]OrganizationAccount, error) {
+// GetNonManagementOrganizationAccounts fetches active organization accounts, excluding the management account.
+func GetNonManagementOrganizationAccounts(ctx context.Context, org OrganizationsClient) ([]OrganizationAccount, error) {
 	slog.Debug("getting organization accounts")
 
-	awscfg, err := LoadAWSConfig(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load aws config: %w", err)
-	}
-
-	orgs := NewOrganizationsClient(awscfg)
-
-	mgmAccount, err := orgs.(*organizationsClient).describeOrganization(ctx)
+	mgmAccountId, err := org.DescribeOrganization(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	orgAccounts, err := orgs.(*organizationsClient).listOrganizationAccounts()
+	allAccounts, err := org.ListAccounts(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var nonManagementOrgAccounts []OrganizationAccount
-	for _, acc := range orgAccounts {
-		if string(acc.State) == "ACTIVE" && *acc.Id != mgmAccount {
-			account := OrganizationAccount{
-				Name:      *acc.Name,
-				AccountID: *acc.Id,
-			}
-			nonManagementOrgAccounts = append(nonManagementOrgAccounts, account)
+	var nonManagementAccounts []OrganizationAccount
+	for _, acc := range allAccounts {
+		if acc.AccountID != mgmAccountId {
+			nonManagementAccounts = append(nonManagementAccounts, acc)
 		}
 	}
 
-	return nonManagementOrgAccounts, nil
+	return nonManagementAccounts, nil
 }
 
-func (c *organizationsClient) listOrganizationAccounts() ([]types.Account, error) {
-	slog.Debug("listing organization accounts")
-
-	params := &organizations.ListAccountsInput{}
-	paginator := organizations.NewListAccountsPaginator(c.client, params)
-
-	var allAccounts []types.Account
-
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(context.Background())
-		if err != nil {
-			return nil, fmt.Errorf("failed to list organization accounts: %v", err)
-		}
-		allAccounts = append(allAccounts, page.Accounts...)
-	}
-
-	return allAccounts, nil
-}
-
-func (c *organizationsClient) describeOrganization(ctx context.Context) (string, error) {
+func (c *organizationsClient) DescribeOrganization(ctx context.Context) (string, error) {
 	slog.Debug("describing organization")
 
 	organization, err := c.client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
@@ -87,6 +57,32 @@ func (c *organizationsClient) describeOrganization(ctx context.Context) (string,
 	}
 
 	return *organization.Organization.MasterAccountId, nil
+}
+
+func (c *organizationsClient) ListAccounts(ctx context.Context) ([]OrganizationAccount, error) {
+	slog.Debug("listing organization accounts")
+
+	params := &organizations.ListAccountsInput{}
+	paginator := organizations.NewListAccountsPaginator(c.client, params)
+
+	var accounts []OrganizationAccount
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list organization accounts: %v", err)
+		}
+		for _, acc := range page.Accounts {
+			if acc.Status == types.AccountStatusActive {
+				accounts = append(accounts, OrganizationAccount{
+					Name:      aws.ToString(acc.Name),
+					AccountID: aws.ToString(acc.Id),
+				})
+			}
+		}
+	}
+
+	return accounts, nil
 }
 
 func (c *organizationsClient) EnableAWSServiceAccess(ctx context.Context, service string) error {
