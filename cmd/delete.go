@@ -8,7 +8,7 @@ import (
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
-	"github.com/unicrons/aws-root-manager/internal/service"
+	"github.com/unicrons/aws-root-manager/rootmanager"
 
 	"github.com/spf13/cobra"
 )
@@ -46,7 +46,7 @@ func deleteSubcommand(use, short, long string) *cobra.Command {
 
 func runDelete(accountsFlags []string, credentialType string) error {
 	ctx := context.Background()
-	rm, err := service.NewRootManagerFromConfig(ctx)
+	rm, err := rootmanager.NewRootManager(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to initialize root manager: %w", err)
 	}

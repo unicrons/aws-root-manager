@@ -1,4 +1,4 @@
-package service
+package rootmanager
 
 import (
 	"context"
@@ -6,11 +6,10 @@ import (
 	"log/slog"
 
 	"github.com/unicrons/aws-root-manager/internal/aws"
-	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
-func checkRootAccess(ctx context.Context, iam aws.IamClient) (rootmanager.RootAccessStatus, error) {
-	var status = rootmanager.RootAccessStatus{
+func checkRootAccess(ctx context.Context, iam aws.IamClient) (RootAccessStatus, error) {
+	var status = RootAccessStatus{
 		TrustedAccess:             false,
 		RootCredentialsManagement: false,
 		RootSessions:              false,
@@ -18,24 +17,24 @@ func checkRootAccess(ctx context.Context, iam aws.IamClient) (rootmanager.RootAc
 
 	err := iam.CheckOrganizationRootAccess(ctx, true)
 	if err != nil {
-		if errors.Is(err, rootmanager.ErrTrustedAccessNotEnabled) {
+		if errors.Is(err, ErrTrustedAccessNotEnabled) {
 			return status, nil
 		}
 		status.TrustedAccess = true
 
-		if errors.Is(err, rootmanager.ErrRootCredentialsManagementNotEnabled) {
+		if errors.Is(err, ErrRootCredentialsManagementNotEnabled) {
 			return status, nil
 		}
 		status.RootCredentialsManagement = true
 
-		if errors.Is(err, rootmanager.ErrRootSessionsNotEnabled) {
+		if errors.Is(err, ErrRootSessionsNotEnabled) {
 			return status, nil
 		}
 
-		return rootmanager.RootAccessStatus{}, err
+		return RootAccessStatus{}, err
 	}
 
-	status = rootmanager.RootAccessStatus{
+	status = RootAccessStatus{
 		TrustedAccess:             true,
 		RootCredentialsManagement: true,
 		RootSessions:              true,
@@ -44,8 +43,8 @@ func checkRootAccess(ctx context.Context, iam aws.IamClient) (rootmanager.RootAc
 	return status, nil
 }
 
-func enableRootAccess(ctx context.Context, iam aws.IamClient, org aws.OrganizationsClient, enableSessions bool) (rootmanager.RootAccessStatus, rootmanager.RootAccessStatus, error) {
-	var initStatus, status rootmanager.RootAccessStatus
+func enableRootAccess(ctx context.Context, iam aws.IamClient, org aws.OrganizationsClient, enableSessions bool) (RootAccessStatus, RootAccessStatus, error) {
+	var initStatus, status RootAccessStatus
 
 	initStatus, err := checkRootAccess(ctx, iam)
 	if err != nil {

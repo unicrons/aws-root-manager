@@ -8,7 +8,7 @@ import (
 
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
-	"github.com/unicrons/aws-root-manager/internal/service"
+	"github.com/unicrons/aws-root-manager/rootmanager"
 
 	"github.com/spf13/cobra"
 )
@@ -22,7 +22,7 @@ func Recovery() *cobra.Command {
 			slog.Debug("recovery called")
 
 			ctx := context.Background()
-			rm, err := service.NewRootManagerFromConfig(ctx)
+			rm, err := rootmanager.NewRootManager(ctx)
 			if err != nil {
 				slog.Error("failed to initialize root manager", "error", err)
 				return err

@@ -1,4 +1,4 @@
-package service
+package rootmanager
 
 import (
 	"context"
@@ -6,14 +6,13 @@ import (
 	"sync"
 
 	"github.com/unicrons/aws-root-manager/internal/aws"
-	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
 // auditAccounts returns root credentials for a list of AWS accounts.
-func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, factory aws.IamClientFactory, accounts []string) ([]rootmanager.RootCredentials, error) {
+func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, factory aws.IamClientFactory, accounts []string) ([]RootCredentials, error) {
 	slog.Debug("auditing accounts", "accounts", accounts)
 
-	rootCredentials := make([]rootmanager.RootCredentials, len(accounts))
+	rootCredentials := make([]RootCredentials, len(accounts))
 	var wgAccounts sync.WaitGroup
 
 	if err := iam.CheckOrganizationRootAccess(ctx, false); err != nil {
@@ -25,7 +24,7 @@ func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, fa
 		go func(idx int, accountId string) {
 			defer wgAccounts.Done()
 			if accStatus, err := auditAccount(ctx, sts, factory, accountId); err != nil {
-				rootCredentials[idx] = rootmanager.RootCredentials{AccountId: accountId, Error: err.Error()}
+				rootCredentials[idx] = RootCredentials{AccountId: accountId, Error: err.Error()}
 			} else {
 				rootCredentials[idx] = accStatus
 			}
@@ -37,17 +36,17 @@ func auditAccounts(ctx context.Context, iam aws.IamClient, sts aws.StsClient, fa
 	return rootCredentials, nil
 }
 
-// Get root credentials for a specific account
-func auditAccount(ctx context.Context, sts aws.StsClient, factory aws.IamClientFactory, accountId string) (rootmanager.RootCredentials, error) {
+// auditAccount returns root credentials for a specific account.
+func auditAccount(ctx context.Context, sts aws.StsClient, factory aws.IamClientFactory, accountId string) (RootCredentials, error) {
 	slog.Debug("auditing account", "account_id", accountId)
 
 	awscfgRoot, err := sts.GetAssumeRootConfig(ctx, accountId, "IAMAuditRootUserCredentials")
 	if err != nil {
-		return rootmanager.RootCredentials{}, err
+		return RootCredentials{}, err
 	}
 
 	iamRoot := factory.NewIamClient(awscfgRoot)
-	var accountRootCredentials rootmanager.RootCredentials
+	var accountRootCredentials RootCredentials
 
 	loginProfile, err := iamRoot.GetLoginProfile(ctx, accountId)
 	if err != nil {
@@ -73,7 +72,7 @@ func auditAccount(ctx context.Context, sts aws.StsClient, factory aws.IamClientF
 	}
 	slog.Debug("audit result", "account_id", accountId, "signing_certificates", certificates)
 
-	accountRootCredentials = rootmanager.RootCredentials{
+	accountRootCredentials = RootCredentials{
 		AccountId:           accountId,
 		LoginProfile:        loginProfile,
 		AccessKeys:          accessKeys,

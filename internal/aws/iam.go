@@ -7,8 +7,6 @@ import (
 	"log/slog"
 	"slices"
 
-	"github.com/unicrons/aws-root-manager/rootmanager"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/iam/types"
@@ -31,14 +29,14 @@ func (c *iamClient) CheckOrganizationRootAccess(ctx context.Context, rootSession
 	if err != nil {
 		var serviceAccessNotEnabledErr *types.ServiceAccessNotEnabledException
 		if errors.As(err, &serviceAccessNotEnabledErr) {
-			return rootmanager.ErrTrustedAccessNotEnabled
+			return ErrTrustedAccessNotEnabled
 		}
 		return fmt.Errorf("aws.CheckOrganizationRootAccess: failed to list organization features: %w", err)
 	}
 
 	rootCredentialsManagement := slices.Contains(features.EnabledFeatures, "RootCredentialsManagement")
 	if !rootCredentialsManagement {
-		return rootmanager.ErrRootCredentialsManagementNotEnabled
+		return ErrRootCredentialsManagementNotEnabled
 	}
 
 	if !rootSessionsRequired {
@@ -47,7 +45,7 @@ func (c *iamClient) CheckOrganizationRootAccess(ctx context.Context, rootSession
 
 	rootSessions := slices.Contains(features.EnabledFeatures, "RootSessions")
 	if !rootSessions {
-		return rootmanager.ErrRootSessionsNotEnabled
+		return ErrRootSessionsNotEnabled
 	}
 
 	return nil
@@ -209,7 +207,7 @@ func (c *iamClient) CreateLoginProfile(ctx context.Context) error {
 		var entityAlreadyExistsErr *types.EntityAlreadyExistsException
 		if errors.As(err, &entityAlreadyExistsErr) {
 			slog.Debug("login profile already exists")
-			return rootmanager.ErrEntityAlreadyExists
+			return ErrEntityAlreadyExists
 		}
 		return fmt.Errorf("error creating login profile: %w", err)
 	}

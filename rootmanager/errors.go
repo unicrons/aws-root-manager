@@ -1,17 +1,17 @@
 package rootmanager
 
-import "errors"
+import internalaws "github.com/unicrons/aws-root-manager/internal/aws"
 
 var (
 	// ErrTrustedAccessNotEnabled indicates AWS IAM does not have trusted access to the organization.
-	ErrTrustedAccessNotEnabled = errors.New("AWS IAM trusted access is not enabled for the organization")
+	ErrTrustedAccessNotEnabled = internalaws.ErrTrustedAccessNotEnabled
 
 	// ErrRootCredentialsManagementNotEnabled indicates centralized root credentials management is not enabled.
-	ErrRootCredentialsManagementNotEnabled = errors.New("centralized root credentials management is not enabled")
+	ErrRootCredentialsManagementNotEnabled = internalaws.ErrRootCredentialsManagementNotEnabled
 
 	// ErrRootSessionsNotEnabled indicates root sessions (AssumeRoot) are not enabled.
-	ErrRootSessionsNotEnabled = errors.New("root sessions are not enabled")
+	ErrRootSessionsNotEnabled = internalaws.ErrRootSessionsNotEnabled
 
 	// ErrEntityAlreadyExists indicates the requested entity already exists.
-	ErrEntityAlreadyExists = errors.New("entity already exists")
+	ErrEntityAlreadyExists = internalaws.ErrEntityAlreadyExists
 )
