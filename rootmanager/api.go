@@ -1,3 +1,14 @@
+// Package rootmanager provides operations for managing AWS root credentials
+// across an AWS Organization using centralized root access (sts:AssumeRoot).
+//
+// Basic usage:
+//
+//	rm, err := rootmanager.NewRootManager(ctx)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	results, err := rm.AuditAccounts(ctx, []string{"123456789012"})
 package rootmanager
 
 import "context"
