@@ -62,7 +62,7 @@ func Audit(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.
 					acc.SigningCertificates,
 				})
 			}
-			output.HandleOutput(outputFlag, headers, data)
+			output.HandleOutput(cmd.OutOrStdout(), outputFlag, headers, data)
 
 			if skipped > 0 {
 				return fmt.Errorf("audit skipped for %d account(s)", skipped)

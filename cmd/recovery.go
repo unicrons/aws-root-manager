@@ -63,7 +63,7 @@ func Recovery(newRM func(context.Context) (rootmanager.RootManager, error)) *cob
 				data = append(data, []any{result.AccountId, status, errorMsg})
 			}
 
-			output.HandleOutput(outputFlag, headers, data)
+			output.HandleOutput(cmd.OutOrStdout(), outputFlag, headers, data)
 
 			if failureCount > 0 {
 				return fmt.Errorf("recovery failed for %d account(s)", failureCount)

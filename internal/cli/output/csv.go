@@ -2,12 +2,12 @@ package output
 
 import (
 	"encoding/csv"
-	"os"
+	"io"
 )
 
 // Prints data in CSV format
-func printCSV(headers []string, data [][]string) error {
-	writer := csv.NewWriter(os.Stdout)
+func printCSV(w io.Writer, headers []string, data [][]string) error {
+	writer := csv.NewWriter(w)
 	if err := writer.Write(headers); err != nil {
 		return err
 	}

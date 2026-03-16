@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
 
@@ -39,12 +40,12 @@ func deleteSubcommand(newRM func(context.Context) (rootmanager.RootManager, erro
 		Long:         long,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDelete(newRM, accountsFlags, credentialType)
+			return runDelete(newRM, cmd.OutOrStdout(), accountsFlags, credentialType)
 		},
 	}
 }
 
-func runDelete(newRM func(context.Context) (rootmanager.RootManager, error), accountsFlags []string, credentialType string) error {
+func runDelete(newRM func(context.Context) (rootmanager.RootManager, error), w io.Writer, accountsFlags []string, credentialType string) error {
 	ctx := context.Background()
 	rm, err := newRM(ctx)
 	if err != nil {
@@ -89,7 +90,7 @@ func runDelete(newRM func(context.Context) (rootmanager.RootManager, error), acc
 			errorMsg,
 		})
 	}
-	output.HandleOutput(outputFlag, headers, data)
+	output.HandleOutput(w, outputFlag, headers, data)
 
 	if failureCount > 0 {
 		return fmt.Errorf("deletion failed for %d account(s)", failureCount)

@@ -38,7 +38,7 @@ func Check(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.
 				{"RootCredentialsManagement", strconv.FormatBool(status.RootCredentialsManagement)},
 				{"RootSessions", strconv.FormatBool(status.RootSessions)},
 			}
-			output.HandleOutput(outputFlag, headers, data)
+			output.HandleOutput(cmd.OutOrStdout(), outputFlag, headers, data)
 			return nil
 		},
 	}
