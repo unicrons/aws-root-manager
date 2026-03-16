@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Enable() *cobra.Command {
+func Enable(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "enable",
 		Short: "Enable centralized root access",
@@ -22,7 +22,7 @@ func Enable() *cobra.Command {
 			enableRootSessions, _ := cmd.Flags().GetBool("enableRootSessions")
 
 			ctx := context.Background()
-			rm, err := rootmanager.NewRootManager(ctx)
+			rm, err := newRM(ctx)
 			if err != nil {
 				slog.Error("failed to initialize root manager", "error", err)
 				return err

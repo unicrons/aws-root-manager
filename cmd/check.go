@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Check() *cobra.Command {
+func Check(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.Command {
 	return &cobra.Command{
 		Use:   "check",
 		Short: "Check if centralized root access is enabled.",
@@ -20,7 +20,7 @@ func Check() *cobra.Command {
 			slog.Debug("check called")
 
 			ctx := context.Background()
-			rm, err := rootmanager.NewRootManager(ctx)
+			rm, err := newRM(ctx)
 			if err != nil {
 				slog.Error("failed to initialize root manager", "error", err)
 				return err

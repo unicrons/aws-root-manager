@@ -13,22 +13,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Delete() *cobra.Command {
+func Delete(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete root user credentials",
 		Long:  `Delete root user credentials for specific AWS Organization member accounts.`,
 	}
 	cmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of AWS account IDs to audit (comma-separated). Use \"all\" to audit all accounts.")
-	cmd.AddCommand(deleteSubcommand("all", "Delete all existing root user credentials", "Delete all existing root user credentials for specific AWS Organization member accounts."))
-	cmd.AddCommand(deleteSubcommand("login", "Delete root user Login Profile", "Delete existing root user Login Profile for specific AWS Organization member accounts."))
-	cmd.AddCommand(deleteSubcommand("keys", "Delete root user Access Keys", "Delete existing root user Access Keys for specific AWS Organization member accounts."))
-	cmd.AddCommand(deleteSubcommand("mfa", "Deactivate root user MFA Devices", "Deactivate existing root user MFA Devices for specific AWS Organization member accounts."))
-	cmd.AddCommand(deleteSubcommand("certificates", "Delete root user Signin Certificates", "Delete existing root user Signing Certificates for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand(newRM, "all", "Delete all existing root user credentials", "Delete all existing root user credentials for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand(newRM, "login", "Delete root user Login Profile", "Delete existing root user Login Profile for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand(newRM, "keys", "Delete root user Access Keys", "Delete existing root user Access Keys for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand(newRM, "mfa", "Deactivate root user MFA Devices", "Deactivate existing root user MFA Devices for specific AWS Organization member accounts."))
+	cmd.AddCommand(deleteSubcommand(newRM, "certificates", "Delete root user Signin Certificates", "Delete existing root user Signing Certificates for specific AWS Organization member accounts."))
 	return cmd
 }
 
-func deleteSubcommand(use, short, long string) *cobra.Command {
+func deleteSubcommand(newRM func(context.Context) (rootmanager.RootManager, error), use, short, long string) *cobra.Command {
 	credentialType := use
 	if use == "certificates" {
 		credentialType = "certificate"
@@ -39,14 +39,14 @@ func deleteSubcommand(use, short, long string) *cobra.Command {
 		Long:         long,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDelete(accountsFlags, credentialType)
+			return runDelete(newRM, accountsFlags, credentialType)
 		},
 	}
 }
 
-func runDelete(accountsFlags []string, credentialType string) error {
+func runDelete(newRM func(context.Context) (rootmanager.RootManager, error), accountsFlags []string, credentialType string) error {
 	ctx := context.Background()
-	rm, err := rootmanager.NewRootManager(ctx)
+	rm, err := newRM(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to initialize root manager: %w", err)
 	}

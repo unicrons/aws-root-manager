@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Audit() *cobra.Command {
+func Audit(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "audit",
 		Short:        "Retrieve root user credentials",
@@ -23,7 +23,7 @@ func Audit() *cobra.Command {
 			slog.Debug("audit called")
 
 			ctx := context.Background()
-			rm, err := rootmanager.NewRootManager(ctx)
+			rm, err := newRM(ctx)
 			if err != nil {
 				slog.Error("failed to initialize root manager", "error", err)
 				return err

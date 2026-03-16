@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Recovery() *cobra.Command {
+func Recovery(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "recovery",
 		Short: "Allow root password recovery",
@@ -22,7 +22,7 @@ func Recovery() *cobra.Command {
 			slog.Debug("recovery called")
 
 			ctx := context.Background()
-			rm, err := rootmanager.NewRootManager(ctx)
+			rm, err := newRM(ctx)
 			if err != nil {
 				slog.Error("failed to initialize root manager", "error", err)
 				return err
