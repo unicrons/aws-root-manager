@@ -3,9 +3,10 @@ package cmd
 import (
 	"bytes"
 	"errors"
-	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
@@ -22,12 +23,8 @@ func TestCheckCommand_AllEnabled(t *testing.T) {
 	cmd := Check(newMockFactory(mock))
 	cmd.SetOut(&buf)
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if !strings.Contains(buf.String(), "true") {
-		t.Errorf("expected 'true' in output, got: %s", buf.String())
-	}
+	require.NoError(t, cmd.Execute())
+	assert.Contains(t, buf.String(), "true")
 }
 
 func TestCheckCommand_AllDisabled(t *testing.T) {
@@ -43,12 +40,8 @@ func TestCheckCommand_AllDisabled(t *testing.T) {
 	cmd := Check(newMockFactory(mock))
 	cmd.SetOut(&buf)
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if !strings.Contains(buf.String(), "false") {
-		t.Errorf("expected 'false' in output, got: %s", buf.String())
-	}
+	require.NoError(t, cmd.Execute())
+	assert.Contains(t, buf.String(), "false")
 }
 
 func TestCheckCommand_FactoryError(t *testing.T) {
@@ -60,12 +53,8 @@ func TestCheckCommand_FactoryError(t *testing.T) {
 
 	err := cmd.Execute()
 
-	if err == nil {
-		t.Fatal("expected an error, got nil")
-	}
-	if !errors.Is(err, factoryErr) {
-		t.Errorf("expected factory error, got: %v", err)
-	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, factoryErr)
 }
 
 func TestCheckCommand_CheckRootAccessError(t *testing.T) {
@@ -78,10 +67,6 @@ func TestCheckCommand_CheckRootAccessError(t *testing.T) {
 
 	err := cmd.Execute()
 
-	if err == nil {
-		t.Fatal("expected an error, got nil")
-	}
-	if !errors.Is(err, checkErr) {
-		t.Errorf("expected check error, got: %v", err)
-	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, checkErr)
 }

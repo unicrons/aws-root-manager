@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	internalaws "github.com/unicrons/aws-root-manager/internal/aws"
 )
 
@@ -12,12 +14,10 @@ func TestCheckRootAccess_AllEnabled(t *testing.T) {
 	iam := &mockIamClient{} // CheckOrganizationRootAccess returns nil → all enabled
 
 	status, err := checkRootAccess(context.Background(), iam)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !status.TrustedAccess || !status.RootCredentialsManagement || !status.RootSessions {
-		t.Errorf("expected all enabled, got: %+v", status)
-	}
+	require.NoError(t, err)
+	assert.True(t, status.TrustedAccess)
+	assert.True(t, status.RootCredentialsManagement)
+	assert.True(t, status.RootSessions)
 }
 
 func TestCheckRootAccess_TrustedAccessDisabled(t *testing.T) {
@@ -26,12 +26,10 @@ func TestCheckRootAccess_TrustedAccessDisabled(t *testing.T) {
 	}
 
 	status, err := checkRootAccess(context.Background(), iam)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if status.TrustedAccess || status.RootCredentialsManagement || status.RootSessions {
-		t.Errorf("expected all disabled, got: %+v", status)
-	}
+	require.NoError(t, err)
+	assert.False(t, status.TrustedAccess)
+	assert.False(t, status.RootCredentialsManagement)
+	assert.False(t, status.RootSessions)
 }
 
 func TestCheckRootAccess_CredentialsManagementDisabled(t *testing.T) {
@@ -40,15 +38,10 @@ func TestCheckRootAccess_CredentialsManagementDisabled(t *testing.T) {
 	}
 
 	status, err := checkRootAccess(context.Background(), iam)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !status.TrustedAccess {
-		t.Error("expected TrustedAccess=true")
-	}
-	if status.RootCredentialsManagement || status.RootSessions {
-		t.Errorf("expected CredMgmt and Sessions disabled, got: %+v", status)
-	}
+	require.NoError(t, err)
+	assert.True(t, status.TrustedAccess)
+	assert.False(t, status.RootCredentialsManagement)
+	assert.False(t, status.RootSessions)
 }
 
 func TestCheckRootAccess_RootSessionsDisabled(t *testing.T) {
@@ -57,15 +50,10 @@ func TestCheckRootAccess_RootSessionsDisabled(t *testing.T) {
 	}
 
 	status, err := checkRootAccess(context.Background(), iam)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !status.TrustedAccess || !status.RootCredentialsManagement {
-		t.Errorf("expected TrustedAccess and CredMgmt enabled, got: %+v", status)
-	}
-	if status.RootSessions {
-		t.Error("expected RootSessions=false")
-	}
+	require.NoError(t, err)
+	assert.True(t, status.TrustedAccess)
+	assert.True(t, status.RootCredentialsManagement)
+	assert.False(t, status.RootSessions)
 }
 
 func TestCheckRootAccess_UnknownError(t *testing.T) {
@@ -75,12 +63,8 @@ func TestCheckRootAccess_UnknownError(t *testing.T) {
 	}
 
 	_, err := checkRootAccess(context.Background(), iam)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !errors.Is(err, unexpected) {
-		t.Errorf("expected unexpected error, got: %v", err)
-	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, unexpected)
 }
 
 func TestEnableRootAccess_AlreadyEnabled(t *testing.T) {
@@ -88,15 +72,11 @@ func TestEnableRootAccess_AlreadyEnabled(t *testing.T) {
 	org := &mockOrganizationsClient{}
 
 	init, final, err := enableRootAccess(context.Background(), iam, org, false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !init.TrustedAccess || !init.RootCredentialsManagement {
-		t.Errorf("expected init all enabled, got: %+v", init)
-	}
-	if !final.TrustedAccess || !final.RootCredentialsManagement {
-		t.Errorf("expected final all enabled, got: %+v", final)
-	}
+	require.NoError(t, err)
+	assert.True(t, init.TrustedAccess)
+	assert.True(t, init.RootCredentialsManagement)
+	assert.True(t, final.TrustedAccess)
+	assert.True(t, final.RootCredentialsManagement)
 }
 
 func TestEnableRootAccess_AllDisabled(t *testing.T) {
@@ -108,15 +88,11 @@ func TestEnableRootAccess_AllDisabled(t *testing.T) {
 	org := &mockOrganizationsClient{}
 
 	init, final, err := enableRootAccess(context.Background(), iam, org, false)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if init.TrustedAccess || init.RootCredentialsManagement {
-		t.Errorf("expected init all disabled, got: %+v", init)
-	}
-	if !final.TrustedAccess || !final.RootCredentialsManagement {
-		t.Errorf("expected final all enabled, got: %+v", final)
-	}
+	require.NoError(t, err)
+	assert.False(t, init.TrustedAccess)
+	assert.False(t, init.RootCredentialsManagement)
+	assert.True(t, final.TrustedAccess)
+	assert.True(t, final.RootCredentialsManagement)
 }
 
 func TestEnableRootAccess_EnableSessionsTrue(t *testing.T) {
@@ -127,12 +103,8 @@ func TestEnableRootAccess_EnableSessionsTrue(t *testing.T) {
 	org := &mockOrganizationsClient{}
 
 	_, final, err := enableRootAccess(context.Background(), iam, org, true)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !final.RootSessions {
-		t.Errorf("expected RootSessions enabled after enabling with enableSessions=true, got: %+v", final)
-	}
+	require.NoError(t, err)
+	assert.True(t, final.RootSessions)
 }
 
 func TestEnableRootAccess_EnableAWSServiceAccessError(t *testing.T) {
@@ -143,12 +115,8 @@ func TestEnableRootAccess_EnableAWSServiceAccessError(t *testing.T) {
 	org := &mockOrganizationsClient{enableServiceAccessErr: serviceErr}
 
 	_, _, err := enableRootAccess(context.Background(), iam, org, false)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !errors.Is(err, serviceErr) {
-		t.Errorf("expected service access error, got: %v", err)
-	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, serviceErr)
 }
 
 // mockOrganizationsClient implements aws.OrganizationsClient for rootmanager tests.

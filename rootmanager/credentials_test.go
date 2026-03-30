@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // --- hasCredentialsToDelete ---
@@ -22,9 +25,7 @@ func TestHasCredentialsToDelete_All(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := hasCredentialsToDelete(tt.creds, "all"); got != tt.want {
-				t.Errorf("hasCredentialsToDelete(%q) = %v, want %v", tt.name, got, tt.want)
-			}
+			assert.Equal(t, tt.want, hasCredentialsToDelete(tt.creds, "all"))
 		})
 	}
 }
@@ -37,25 +38,15 @@ func TestHasCredentialsToDelete_SpecificTypes(t *testing.T) {
 		SigningCertificates: []string{"cert1"},
 	}
 
-	if !hasCredentialsToDelete(creds, "login") {
-		t.Error("expected login=true")
-	}
-	if !hasCredentialsToDelete(creds, "keys") {
-		t.Error("expected keys=true")
-	}
-	if !hasCredentialsToDelete(creds, "mfa") {
-		t.Error("expected mfa=true")
-	}
-	if !hasCredentialsToDelete(creds, "certificate") {
-		t.Error("expected certificate=true")
-	}
+	assert.True(t, hasCredentialsToDelete(creds, "login"))
+	assert.True(t, hasCredentialsToDelete(creds, "keys"))
+	assert.True(t, hasCredentialsToDelete(creds, "mfa"))
+	assert.True(t, hasCredentialsToDelete(creds, "certificate"))
 }
 
 func TestHasCredentialsToDelete_UnknownType(t *testing.T) {
 	creds := RootCredentials{LoginProfile: true}
-	if hasCredentialsToDelete(creds, "unknown") {
-		t.Error("expected false for unknown credential type")
-	}
+	assert.False(t, hasCredentialsToDelete(creds, "unknown"))
 }
 
 // --- deleteAccountsCredentials ---
@@ -67,12 +58,8 @@ func TestDeleteAccountsCredentials_CheckAccessError(t *testing.T) {
 	}
 
 	_, err := deleteAccountsCredentials(context.Background(), iam, nil, nil, []RootCredentials{}, "all")
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !errors.Is(err, accessErr) {
-		t.Errorf("expected access error, got: %v", err)
-	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, accessErr)
 }
 
 func TestDeleteAccountsCredentials_NoCredentials(t *testing.T) {
@@ -84,15 +71,9 @@ func TestDeleteAccountsCredentials_NoCredentials(t *testing.T) {
 	}
 
 	results, err := deleteAccountsCredentials(context.Background(), iam, sts, nil, creds, "all")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if !results[0].Success {
-		t.Errorf("expected success when no credentials to delete, got error: %s", results[0].Error)
-	}
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.True(t, results[0].Success)
 }
 
 func TestDeleteAccountsCredentials_DeleteLoginProfile(t *testing.T) {
@@ -106,12 +87,8 @@ func TestDeleteAccountsCredentials_DeleteLoginProfile(t *testing.T) {
 	}
 
 	results, err := deleteAccountsCredentials(context.Background(), iam, sts, factory, creds, "login")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !results[0].Success {
-		t.Errorf("expected success, got error: %s", results[0].Error)
-	}
+	require.NoError(t, err)
+	assert.True(t, results[0].Success)
 }
 
 func TestDeleteAccountsCredentials_DeleteAccessKeys(t *testing.T) {
@@ -125,12 +102,8 @@ func TestDeleteAccountsCredentials_DeleteAccessKeys(t *testing.T) {
 	}
 
 	results, err := deleteAccountsCredentials(context.Background(), iam, sts, factory, creds, "keys")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !results[0].Success {
-		t.Errorf("expected success, got error: %s", results[0].Error)
-	}
+	require.NoError(t, err)
+	assert.True(t, results[0].Success)
 }
 
 func TestDeleteAccountsCredentials_DeactivateMFA(t *testing.T) {
@@ -144,12 +117,8 @@ func TestDeleteAccountsCredentials_DeactivateMFA(t *testing.T) {
 	}
 
 	results, err := deleteAccountsCredentials(context.Background(), iam, sts, factory, creds, "mfa")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !results[0].Success {
-		t.Errorf("expected success, got error: %s", results[0].Error)
-	}
+	require.NoError(t, err)
+	assert.True(t, results[0].Success)
 }
 
 func TestDeleteAccountsCredentials_DeleteCertificates(t *testing.T) {
@@ -163,12 +132,8 @@ func TestDeleteAccountsCredentials_DeleteCertificates(t *testing.T) {
 	}
 
 	results, err := deleteAccountsCredentials(context.Background(), iam, sts, factory, creds, "certificate")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !results[0].Success {
-		t.Errorf("expected success, got error: %s", results[0].Error)
-	}
+	require.NoError(t, err)
+	assert.True(t, results[0].Success)
 }
 
 func TestDeleteAccountsCredentials_STSError(t *testing.T) {
@@ -181,15 +146,9 @@ func TestDeleteAccountsCredentials_STSError(t *testing.T) {
 	}
 
 	results, err := deleteAccountsCredentials(context.Background(), iam, sts, nil, creds, "login")
-	if err != nil {
-		t.Fatalf("unexpected top-level error: %v", err)
-	}
-	if results[0].Success {
-		t.Error("expected failure for STS error")
-	}
-	if results[0].Error == "" {
-		t.Error("expected error message in result")
-	}
+	require.NoError(t, err)
+	assert.False(t, results[0].Success)
+	assert.NotEmpty(t, results[0].Error)
 }
 
 // --- recoverAccountsRootPassword ---
@@ -201,12 +160,8 @@ func TestRecoverAccountsRootPassword_CheckAccessError(t *testing.T) {
 	}
 
 	_, err := recoverAccountsRootPassword(context.Background(), iam, nil, nil, []string{"123456789012"})
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !errors.Is(err, accessErr) {
-		t.Errorf("expected access error, got: %v", err)
-	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, accessErr)
 }
 
 func TestRecoverAccountsRootPassword_Success(t *testing.T) {
@@ -216,15 +171,9 @@ func TestRecoverAccountsRootPassword_Success(t *testing.T) {
 	iam := &mockIamClient{}
 
 	results, err := recoverAccountsRootPassword(context.Background(), iam, sts, factory, []string{"123456789012"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-	if !results[0].Success {
-		t.Errorf("expected success, got: %+v", results[0])
-	}
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	assert.True(t, results[0].Success)
 }
 
 func TestRecoverAccountsRootPassword_AlreadyExists(t *testing.T) {
@@ -234,15 +183,9 @@ func TestRecoverAccountsRootPassword_AlreadyExists(t *testing.T) {
 	iam := &mockIamClient{}
 
 	results, err := recoverAccountsRootPassword(context.Background(), iam, sts, factory, []string{"123456789012"})
-	if err != nil {
-		t.Fatalf("unexpected top-level error: %v", err)
-	}
-	if results[0].Success {
-		t.Error("expected success=false when login profile already exists")
-	}
-	if results[0].Error != "" {
-		t.Errorf("expected no error string when profile already exists, got: %s", results[0].Error)
-	}
+	require.NoError(t, err)
+	assert.False(t, results[0].Success)
+	assert.Empty(t, results[0].Error)
 }
 
 func TestRecoverAccountsRootPassword_STSError(t *testing.T) {
@@ -251,13 +194,7 @@ func TestRecoverAccountsRootPassword_STSError(t *testing.T) {
 	iam := &mockIamClient{}
 
 	results, err := recoverAccountsRootPassword(context.Background(), iam, sts, nil, []string{"123456789012"})
-	if err != nil {
-		t.Fatalf("unexpected top-level error: %v", err)
-	}
-	if results[0].Success {
-		t.Error("expected failure for STS error")
-	}
-	if results[0].Error == "" {
-		t.Error("expected error message in result")
-	}
+	require.NoError(t, err)
+	assert.False(t, results[0].Success)
+	assert.NotEmpty(t, results[0].Error)
 }

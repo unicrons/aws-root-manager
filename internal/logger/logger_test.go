@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/unicrons/aws-root-manager/internal/logger"
 )
 
@@ -21,9 +22,8 @@ func TestConfigure_ValidLevels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.level, func(t *testing.T) {
 			logger.Configure(tt.level, "text")
-			if !slog.Default().Enabled(context.Background(), tt.slogLevel) {
-				t.Errorf("Configure(%q) did not enable level %v", tt.level, tt.slogLevel)
-			}
+			assert.True(t, slog.Default().Enabled(context.Background(), tt.slogLevel),
+				"Configure(%q) did not enable level %v", tt.level, tt.slogLevel)
 		})
 	}
 }
@@ -41,9 +41,8 @@ func TestConfigure_UnknownLevelDefaultsToError(t *testing.T) {
 	unknownLevels := []string{"trace", "", "verbose"}
 	for _, level := range unknownLevels {
 		logger.Configure(level, "text")
-		if slog.Default().Enabled(context.Background(), slog.LevelWarn) {
-			t.Errorf("Configure(%q) should default to error level, but warn is enabled", level)
-		}
+		assert.False(t, slog.Default().Enabled(context.Background(), slog.LevelWarn),
+			"Configure(%q) should default to error level, but warn is enabled", level)
 	}
 }
 

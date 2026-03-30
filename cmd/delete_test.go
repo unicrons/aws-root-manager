@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
@@ -23,28 +25,8 @@ func TestDeleteCommand_Success(t *testing.T) {
 	cmd.SetOut(&buf)
 	cmd.SetArgs([]string{"all", "--accounts", "123456789012"})
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if buf.Len() == 0 {
-		t.Error("expected output, got empty buffer")
-	}
-}
-
-func TestDeleteCommand_FactoryError(t *testing.T) {
-	factoryErr := errors.New("failed to load AWS config")
-
-	cmd := Delete(newFailingFactory(factoryErr))
-	cmd.SilenceErrors = true
-	cmd.SetArgs([]string{"all", "--accounts", "123456789012"})
-
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("expected an error, got nil")
-	}
-	if !errors.Is(err, factoryErr) {
-		t.Errorf("expected factory error, got: %v", err)
-	}
+	require.NoError(t, cmd.Execute())
+	assert.NotEmpty(t, buf.String())
 }
 
 func TestDeleteCommand_CertificatesSubcommand(t *testing.T) {
@@ -62,12 +44,20 @@ func TestDeleteCommand_CertificatesSubcommand(t *testing.T) {
 	cmd.SetOut(&buf)
 	cmd.SetArgs([]string{"certificates", "--accounts", "123456789012"})
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if buf.Len() == 0 {
-		t.Error("expected output, got empty buffer")
-	}
+	require.NoError(t, cmd.Execute())
+	assert.NotEmpty(t, buf.String())
+}
+
+func TestDeleteCommand_FactoryError(t *testing.T) {
+	factoryErr := errors.New("failed to load AWS config")
+
+	cmd := Delete(newFailingFactory(factoryErr))
+	cmd.SilenceErrors = true
+	cmd.SetArgs([]string{"all", "--accounts", "123456789012"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.ErrorIs(t, err, factoryErr)
 }
 
 func TestDeleteCommand_DeleteFailure(t *testing.T) {
@@ -84,8 +74,5 @@ func TestDeleteCommand_DeleteFailure(t *testing.T) {
 	cmd.SilenceErrors = true
 	cmd.SetArgs([]string{"all", "--accounts", "123456789012"})
 
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("expected error for failed deletion, got nil")
-	}
+	require.Error(t, cmd.Execute())
 }

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
@@ -18,12 +20,8 @@ func TestEnableCommand_Success(t *testing.T) {
 	cmd := Enable(newMockFactory(mock))
 	cmd.SetOut(&buf)
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if buf.Len() == 0 {
-		t.Error("expected output, got empty buffer")
-	}
+	require.NoError(t, cmd.Execute())
+	assert.NotEmpty(t, buf.String())
 }
 
 func TestEnableCommand_WithRootSessions(t *testing.T) {
@@ -37,12 +35,8 @@ func TestEnableCommand_WithRootSessions(t *testing.T) {
 	cmd.SetOut(&buf)
 	cmd.SetArgs([]string{"--enableRootSessions=true"})
 
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
-	if buf.Len() == 0 {
-		t.Error("expected output, got empty buffer")
-	}
+	require.NoError(t, cmd.Execute())
+	assert.NotEmpty(t, buf.String())
 }
 
 func TestEnableCommand_FactoryError(t *testing.T) {
@@ -53,12 +47,8 @@ func TestEnableCommand_FactoryError(t *testing.T) {
 	cmd.SilenceUsage = true
 
 	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("expected an error, got nil")
-	}
-	if !errors.Is(err, factoryErr) {
-		t.Errorf("expected factory error, got: %v", err)
-	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, factoryErr)
 }
 
 func TestEnableCommand_EnableError(t *testing.T) {
@@ -70,10 +60,6 @@ func TestEnableCommand_EnableError(t *testing.T) {
 	cmd.SilenceUsage = true
 
 	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("expected an error, got nil")
-	}
-	if !errors.Is(err, enableErr) {
-		t.Errorf("expected enable error, got: %v", err)
-	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, enableErr)
 }
