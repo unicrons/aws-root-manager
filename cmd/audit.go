@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/unicrons/aws-root-manager/internal/aws"
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
 	"github.com/unicrons/aws-root-manager/rootmanager"
@@ -29,7 +30,11 @@ func Audit(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.
 				return err
 			}
 
-			auditAccounts, err := ui.SelectTargetAccounts(ctx, accountsFlags)
+			awscfg, err := aws.LoadAWSConfig(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to load aws config: %w", err)
+			}
+			auditAccounts, err := ui.SelectTargetAccounts(ctx, aws.NewOrganizationsClient(awscfg), accountsFlags)
 			if err != nil {
 				slog.Error("failed to get accounts to audit", "error", err)
 				return err

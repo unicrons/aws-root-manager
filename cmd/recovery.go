@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/unicrons/aws-root-manager/internal/aws"
 	"github.com/unicrons/aws-root-manager/internal/cli/output"
 	"github.com/unicrons/aws-root-manager/internal/cli/ui"
 	"github.com/unicrons/aws-root-manager/rootmanager"
@@ -28,7 +29,11 @@ func Recovery(newRM func(context.Context) (rootmanager.RootManager, error)) *cob
 				return err
 			}
 
-			targetAccounts, err := ui.SelectTargetAccounts(ctx, accountsFlags)
+			awscfg, err := aws.LoadAWSConfig(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to load aws config: %w", err)
+			}
+			targetAccounts, err := ui.SelectTargetAccounts(ctx, aws.NewOrganizationsClient(awscfg), accountsFlags)
 			if err != nil {
 				slog.Error("failed to get target accounts", "error", err)
 				return err

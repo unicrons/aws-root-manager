@@ -15,20 +15,14 @@ const (
 
 // SelectTargetAccounts handles interactive account selection or returns accounts based on flags.
 // Returns account IDs based on flags or TUI prompt.
-func SelectTargetAccounts(ctx context.Context, accountsFlag []string) ([]string, error) {
+// org is only used when accountsFlag is empty or "all".
+func SelectTargetAccounts(ctx context.Context, org aws.OrganizationsClient, accountsFlag []string) ([]string, error) {
 	slog.Debug("processing target accounts", "accounts_flag", accountsFlag)
 
 	// if accounts are provided and "all" is not specified, return them
 	if len(accountsFlag) > 0 && accountsFlag[0] != AllAccountsOption {
 		return accountsFlag, nil
 	}
-
-	// create organizations client to fetch accounts
-	awscfg, err := aws.LoadAWSConfig(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load aws config: %w", err)
-	}
-	org := aws.NewOrganizationsClient(awscfg)
 
 	// fetch all non-management accounts
 	orgAccounts, err := aws.GetNonManagementOrganizationAccounts(ctx, org)
