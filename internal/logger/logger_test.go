@@ -1,16 +1,29 @@
 package logger_test
 
 import (
+	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/unicrons/aws-root-manager/internal/logger"
 )
 
 func TestConfigure_ValidLevels(t *testing.T) {
-	levels := []string{"debug", "info", "warn", "error"}
-	for _, level := range levels {
-		t.Run(level, func(t *testing.T) {
-			logger.Configure(level, "text")
+	tests := []struct {
+		level     string
+		slogLevel slog.Level
+	}{
+		{"debug", slog.LevelDebug},
+		{"info", slog.LevelInfo},
+		{"warn", slog.LevelWarn},
+		{"error", slog.LevelError},
+	}
+	for _, tt := range tests {
+		t.Run(tt.level, func(t *testing.T) {
+			logger.Configure(tt.level, "text")
+			if !slog.Default().Enabled(context.Background(), tt.slogLevel) {
+				t.Errorf("Configure(%q) did not enable level %v", tt.level, tt.slogLevel)
+			}
 		})
 	}
 }
@@ -25,10 +38,13 @@ func TestConfigure_ValidFormats(t *testing.T) {
 }
 
 func TestConfigure_UnknownLevelDefaultsToError(t *testing.T) {
-	// unknown level should not panic — defaults to error
-	logger.Configure("trace", "text")
-	logger.Configure("", "text")
-	logger.Configure("verbose", "text")
+	unknownLevels := []string{"trace", "", "verbose"}
+	for _, level := range unknownLevels {
+		logger.Configure(level, "text")
+		if slog.Default().Enabled(context.Background(), slog.LevelWarn) {
+			t.Errorf("Configure(%q) should default to error level, but warn is enabled", level)
+		}
+	}
 }
 
 func TestConfigure_UnknownFormatDefaultsToText(t *testing.T) {

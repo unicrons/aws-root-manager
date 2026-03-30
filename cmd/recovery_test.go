@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/unicrons/aws-root-manager/rootmanager"
@@ -42,6 +43,26 @@ func TestRecoveryCommand_FactoryError(t *testing.T) {
 	}
 	if !errors.Is(err, factoryErr) {
 		t.Errorf("expected factory error, got: %v", err)
+	}
+}
+
+func TestRecoveryCommand_AlreadyExists(t *testing.T) {
+	mock := &mockRootManager{
+		recoveryResult: []rootmanager.RecoveryResult{
+			{AccountId: "123456789012", Success: false, Error: ""},
+		},
+	}
+
+	var buf bytes.Buffer
+	cmd := Recovery(newMockFactory(mock))
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"--accounts", "123456789012"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error for already-exists case, got: %v", err)
+	}
+	if !strings.Contains(buf.String(), "already exists") {
+		t.Errorf("expected 'already exists' in output, got: %s", buf.String())
 	}
 }
 

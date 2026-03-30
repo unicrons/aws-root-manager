@@ -26,6 +26,25 @@ func TestEnableCommand_Success(t *testing.T) {
 	}
 }
 
+func TestEnableCommand_WithRootSessions(t *testing.T) {
+	mock := &mockRootManager{
+		enableInit:  rootmanager.RootAccessStatus{TrustedAccess: true, RootCredentialsManagement: true, RootSessions: false},
+		enableFinal: rootmanager.RootAccessStatus{TrustedAccess: true, RootCredentialsManagement: true, RootSessions: true},
+	}
+
+	var buf bytes.Buffer
+	cmd := Enable(newMockFactory(mock))
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"--enableRootSessions=true"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if buf.Len() == 0 {
+		t.Error("expected output, got empty buffer")
+	}
+}
+
 func TestEnableCommand_FactoryError(t *testing.T) {
 	factoryErr := errors.New("failed to load AWS config")
 

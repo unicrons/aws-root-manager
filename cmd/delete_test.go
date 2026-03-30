@@ -47,6 +47,29 @@ func TestDeleteCommand_FactoryError(t *testing.T) {
 	}
 }
 
+func TestDeleteCommand_CertificatesSubcommand(t *testing.T) {
+	mock := &mockRootManager{
+		auditResult: []rootmanager.RootCredentials{
+			{AccountId: "123456789012"},
+		},
+		deleteResult: []rootmanager.DeletionResult{
+			{AccountId: "123456789012", CredentialType: "certificate", Success: true},
+		},
+	}
+
+	var buf bytes.Buffer
+	cmd := Delete(newMockFactory(mock))
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"certificates", "--accounts", "123456789012"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if buf.Len() == 0 {
+		t.Error("expected output, got empty buffer")
+	}
+}
+
 func TestDeleteCommand_DeleteFailure(t *testing.T) {
 	mock := &mockRootManager{
 		auditResult: []rootmanager.RootCredentials{

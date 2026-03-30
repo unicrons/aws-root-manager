@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/unicrons/aws-root-manager/rootmanager"
@@ -24,6 +25,9 @@ func TestCheckCommand_AllEnabled(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
+	if !strings.Contains(buf.String(), "true") {
+		t.Errorf("expected 'true' in output, got: %s", buf.String())
+	}
 }
 
 func TestCheckCommand_AllDisabled(t *testing.T) {
@@ -41,6 +45,9 @@ func TestCheckCommand_AllDisabled(t *testing.T) {
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
+	}
+	if !strings.Contains(buf.String(), "false") {
+		t.Errorf("expected 'false' in output, got: %s", buf.String())
 	}
 }
 

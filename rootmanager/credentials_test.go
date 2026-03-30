@@ -114,6 +114,63 @@ func TestDeleteAccountsCredentials_DeleteLoginProfile(t *testing.T) {
 	}
 }
 
+func TestDeleteAccountsCredentials_DeleteAccessKeys(t *testing.T) {
+	rootIam := &mockIamClient{}
+	sts := &mockStsClient{}
+	factory := &mockIamClientFactory{client: rootIam}
+	iam := &mockIamClient{}
+
+	creds := []RootCredentials{
+		{AccountId: "123456789012", AccessKeys: []string{"AKIA123"}},
+	}
+
+	results, err := deleteAccountsCredentials(context.Background(), iam, sts, factory, creds, "keys")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !results[0].Success {
+		t.Errorf("expected success, got error: %s", results[0].Error)
+	}
+}
+
+func TestDeleteAccountsCredentials_DeactivateMFA(t *testing.T) {
+	rootIam := &mockIamClient{}
+	sts := &mockStsClient{}
+	factory := &mockIamClientFactory{client: rootIam}
+	iam := &mockIamClient{}
+
+	creds := []RootCredentials{
+		{AccountId: "123456789012", MfaDevices: []string{"arn:aws:iam::123456789012:mfa/root"}},
+	}
+
+	results, err := deleteAccountsCredentials(context.Background(), iam, sts, factory, creds, "mfa")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !results[0].Success {
+		t.Errorf("expected success, got error: %s", results[0].Error)
+	}
+}
+
+func TestDeleteAccountsCredentials_DeleteCertificates(t *testing.T) {
+	rootIam := &mockIamClient{}
+	sts := &mockStsClient{}
+	factory := &mockIamClientFactory{client: rootIam}
+	iam := &mockIamClient{}
+
+	creds := []RootCredentials{
+		{AccountId: "123456789012", SigningCertificates: []string{"cert-id-1"}},
+	}
+
+	results, err := deleteAccountsCredentials(context.Background(), iam, sts, factory, creds, "certificate")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !results[0].Success {
+		t.Errorf("expected success, got error: %s", results[0].Error)
+	}
+}
+
 func TestDeleteAccountsCredentials_STSError(t *testing.T) {
 	stsErr := errors.New("assume root denied")
 	sts := &mockStsClient{assumeRootErr: stsErr}
