@@ -8,14 +8,13 @@ import (
 
 var version = "dev"
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print the version",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Version:", version)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(versionCmd)
+func Version() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print the version",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Println("Version:", version)
+			return nil
+		},
+	}
 }

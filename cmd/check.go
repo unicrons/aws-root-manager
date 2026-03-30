@@ -2,47 +2,44 @@ package cmd
 
 import (
 	"context"
+	"log/slog"
 	"strconv"
 
-	"github.com/unicrons/aws-root-manager/pkg/aws"
-	"github.com/unicrons/aws-root-manager/pkg/logger"
-	"github.com/unicrons/aws-root-manager/pkg/output"
-	"github.com/unicrons/aws-root-manager/pkg/service"
+	"github.com/unicrons/aws-root-manager/internal/cli/output"
+	"github.com/unicrons/aws-root-manager/rootmanager"
 
 	"github.com/spf13/cobra"
 )
 
-var checkCmd = &cobra.Command{
-	Use:   "check",
-	Short: "Check if centralized root access is enabled.",
-	Long:  `Retrieve the status of centralized root access settings for an AWS Organization.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		logger.Trace("cmd.check", "check called")
+func Check(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.Command {
+	return &cobra.Command{
+		Use:   "check",
+		Short: "Check if centralized root access is enabled.",
+		Long:  `Retrieve the status of centralized root access settings for an AWS Organization.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			slog.Debug("check called")
 
-		ctx := context.Background()
-		awscfg, err := aws.LoadAWSConfig(ctx)
-		if err != nil {
-			logger.Error("cmd.check", err, "failed to load aws config")
-			return
-		}
+			ctx := context.Background()
+			rm, err := newRM(ctx)
+			if err != nil {
+				slog.Error("failed to initialize root manager", "error", err)
+				return err
+			}
 
-		iam := aws.NewIamClient(awscfg)
-		test, err := service.CheckRootAccess(ctx, iam)
-		if err != nil {
-			logger.Error("cmd.check", err, "failed to check root access configuration")
-			return
-		}
+			status, err := rm.CheckRootAccess(ctx)
+			if err != nil {
+				slog.Error("failed to check root access configuration", "error", err)
+				return err
+			}
 
-		headers := []string{"Name", "Status"}
-		data := [][]any{
-			{"TrustedAccess", strconv.FormatBool(test.TrustedAccess)},
-			{"RootCredentialsManagement", strconv.FormatBool(test.RootCredentialsManagement)},
-			{"RootSessions", strconv.FormatBool(test.RootSessions)},
-		}
-		output.HandleOutput(outputFlag, headers, data)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(checkCmd)
+			headers := []string{"Name", "Status"}
+			data := [][]any{
+				{"TrustedAccess", strconv.FormatBool(status.TrustedAccess)},
+				{"RootCredentialsManagement", strconv.FormatBool(status.RootCredentialsManagement)},
+				{"RootSessions", strconv.FormatBool(status.RootSessions)},
+			}
+			output.HandleOutput(cmd.OutOrStdout(), outputFlag, headers, data)
+			return nil
+		},
+	}
 }

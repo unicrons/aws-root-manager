@@ -2,64 +2,81 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"strings"
 
-	"github.com/unicrons/aws-root-manager/pkg/aws"
-	"github.com/unicrons/aws-root-manager/pkg/logger"
-	"github.com/unicrons/aws-root-manager/pkg/output"
-	"github.com/unicrons/aws-root-manager/pkg/service"
+	"github.com/unicrons/aws-root-manager/internal/aws"
+	"github.com/unicrons/aws-root-manager/internal/cli/output"
+	"github.com/unicrons/aws-root-manager/internal/cli/ui"
+	"github.com/unicrons/aws-root-manager/rootmanager"
 
 	"github.com/spf13/cobra"
 )
 
-var recoveryCmd = &cobra.Command{
-	Use:   "recovery",
-	Short: "Allow root password recovery",
-	Long:  `Retrieve the status of centralized root access settings for an AWS Organization.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		logger.Trace("cmd.recovery", "recovery called")
+func Recovery(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "recovery",
+		Short: "Allow root password recovery",
+		Long:  `Retrieve the status of centralized root access settings for an AWS Organization.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			slog.Debug("recovery called")
 
-		ctx := context.Background()
-		awscfg, err := aws.LoadAWSConfig(ctx)
-		if err != nil {
-			logger.Error("cmd.recovery", err, "failed to load aws config")
-			return
-		}
-
-		targetAccounts, err := service.GetTargetAccounts(ctx, accountsFlags)
-		if err != nil {
-			logger.Error("cmd.recovery", err, "failed to get target accounts")
-		}
-		if len(targetAccounts) == 0 {
-			logger.Info("cmd.recovery", "no accounts selected")
-			return
-		}
-		logger.Debug("cmd.recovery", "selected accounts: %s", strings.Join(targetAccounts, ", "))
-
-		iam := aws.NewIamClient(awscfg)
-		sts := aws.NewStsClient(awscfg)
-
-		resultMap, err := service.RecoverAccountsRootPassword(ctx, iam, sts, targetAccounts)
-		if err != nil {
-			logger.Error("cmd.recovery", err, "failed to recover root password")
-			return
-		}
-
-		headers := []string{"Account", "Login Profile"}
-		var data [][]any
-		for acc, success := range resultMap {
-			status := "recovered"
-			if !success {
-				status = "already exists"
+			ctx := context.Background()
+			rm, err := newRM(ctx)
+			if err != nil {
+				slog.Error("failed to initialize root manager", "error", err)
+				return err
 			}
-			data = append(data, []any{acc, status})
-		}
 
-		output.HandleOutput(outputFlag, headers, data)
-	},
-}
+			awscfg, err := aws.LoadAWSConfig(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to load aws config: %w", err)
+			}
+			targetAccounts, err := ui.SelectTargetAccounts(ctx, aws.NewOrganizationsClient(awscfg), accountsFlags)
+			if err != nil {
+				slog.Error("failed to get target accounts", "error", err)
+				return err
+			}
+			if len(targetAccounts) == 0 {
+				slog.Info("no accounts selected")
+				return nil
+			}
+			slog.Debug("selected accounts", "accounts", strings.Join(targetAccounts, ", "))
 
-func init() {
-	rootCmd.AddCommand(recoveryCmd)
-	recoveryCmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of tarjet AWS account IDs (comma-separated). Use \"all\" to select all accounts.")
+			results, err := rm.RecoverRootPassword(ctx, targetAccounts)
+			if err != nil {
+				slog.Error("failed to recover root password", "error", err)
+				return err
+			}
+
+			headers := []string{"Account", "Login Profile", "Error"}
+			var data [][]any
+			var failureCount int
+			for _, result := range results {
+				status := "recovered"
+				errorMsg := ""
+				if !result.Success {
+					if result.Error != "" {
+						status = "failed"
+						errorMsg = result.Error
+						failureCount++
+					} else {
+						status = "already exists"
+					}
+				}
+				data = append(data, []any{result.AccountId, status, errorMsg})
+			}
+
+			output.HandleOutput(cmd.OutOrStdout(), outputFlag, headers, data)
+
+			if failureCount > 0 {
+				return fmt.Errorf("recovery failed for %d account(s)", failureCount)
+			}
+
+			return nil
+		},
+	}
+	cmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of tarjet AWS account IDs (comma-separated). Use \"all\" to select all accounts.")
+	return cmd
 }

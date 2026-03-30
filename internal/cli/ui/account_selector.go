@@ -1,12 +1,11 @@
-package service
+package ui
 
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
-	"github.com/unicrons/aws-root-manager/pkg/aws"
-	"github.com/unicrons/aws-root-manager/pkg/logger"
-	"github.com/unicrons/aws-root-manager/pkg/ui"
+	"github.com/unicrons/aws-root-manager/internal/aws"
 )
 
 const (
@@ -14,23 +13,25 @@ const (
 	AllAccountsSelectorText = "all non management accounts"
 )
 
-// Get target AWS accounts based on input flags or user interaction
-func GetTargetAccounts(ctx context.Context, accounts []string) ([]string, error) {
-	logger.Trace("service.GetTargetAccounts", "processing target accounts: %s", accounts)
+// SelectTargetAccounts handles interactive account selection or returns accounts based on flags.
+// Returns account IDs based on flags or TUI prompt.
+// org is only used when accountsFlag is empty or "all".
+func SelectTargetAccounts(ctx context.Context, org aws.OrganizationsClient, accountsFlag []string) ([]string, error) {
+	slog.Debug("processing target accounts", "accounts_flag", accountsFlag)
 
 	// if accounts are provided and "all" is not specified, return them
-	if len(accounts) > 0 && accounts[0] != AllAccountsOption {
-		return accounts, nil
+	if len(accountsFlag) > 0 && accountsFlag[0] != AllAccountsOption {
+		return accountsFlag, nil
 	}
 
 	// fetch all non-management accounts
-	orgAccounts, err := aws.GetNonManagementOrganizationAccounts(ctx)
+	orgAccounts, err := aws.GetNonManagementOrganizationAccounts(ctx, org)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching organization accounts: %w", err)
 	}
 
 	// if "all" is specified, return all account IDs
-	if len(accounts) > 0 && accounts[0] == AllAccountsOption {
+	if len(accountsFlag) > 0 && accountsFlag[0] == AllAccountsOption {
 		return convertAccountsToIDs(orgAccounts), nil
 	}
 
@@ -40,7 +41,7 @@ func GetTargetAccounts(ctx context.Context, accounts []string) ([]string, error)
 	for _, account := range orgAccounts {
 		selectorChoices = append(selectorChoices, fmt.Sprintf("%s - %s", account.AccountID, account.Name))
 	}
-	selectedIndexes, err := ui.Prompt("Please select the AWS accounts to audit", selectorChoices)
+	selectedIndexes, err := Prompt("Please select the AWS accounts to audit", selectorChoices)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func GetTargetAccounts(ctx context.Context, accounts []string) ([]string, error)
 
 	// Resolve selected accounts
 	if allSelected(selectedIndexes) {
-		logger.Debug("service.GetTargetAccounts", "all accounts selected")
+		slog.Debug("all accounts selected")
 		return convertAccountsToIDs(orgAccounts), nil
 	}
 

@@ -3,8 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
-
-	"github.com/unicrons/aws-root-manager/pkg/logger"
+	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -13,17 +12,17 @@ import (
 
 const rootPolicyPrefix = "arn:aws:iam::aws:policy/root-task/"
 
-type StsClient struct {
+type stsClient struct {
 	client *sts.Client
 }
 
-func NewStsClient(awscfg aws.Config) *StsClient {
+func NewStsClient(awscfg aws.Config) StsClient {
 	client := sts.NewFromConfig(awscfg)
-	return &StsClient{client: client}
+	return &stsClient{client: client}
 }
 
-func (c *StsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPolicyName string) (aws.Config, error) {
-	logger.Trace("aws.GetAssumeRootConfig", "getting root aws.config account %s and task %s", accountId, taskPolicyName)
+func (c *stsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPolicyName string) (aws.Config, error) {
+	slog.Debug("getting root aws config", "account_id", accountId, "task", taskPolicyName)
 
 	stsCreds, err := c.assumeRoot(ctx, accountId, taskPolicyName)
 	if err != nil {
@@ -43,13 +42,13 @@ func (c *StsClient) GetAssumeRootConfig(ctx context.Context, accountId, taskPoli
 		return aws.Config{}, fmt.Errorf("error loading aws root config: %s", err)
 	}
 
-	logger.Debug("aws.GetAssumeRootConfig", "successfully generated assume root credentials for account %s and task %s", accountId, taskPolicyName)
+	slog.Debug("successfully generated assume root credentials", "account_id", accountId, "task", taskPolicyName)
 
 	return awsrootcfg, nil
 }
 
-func (c *StsClient) assumeRoot(ctx context.Context, accountId, taskPolicyName string) (types.Credentials, error) {
-	logger.Trace("aws.assumeRoot", "assuming root for account %s and task %s", accountId, taskPolicyName)
+func (c *stsClient) assumeRoot(ctx context.Context, accountId, taskPolicyName string) (types.Credentials, error) {
+	slog.Debug("assuming root", "account_id", accountId, "task", taskPolicyName)
 
 	params := &sts.AssumeRootInput{
 		TargetPrincipal: aws.String(accountId),

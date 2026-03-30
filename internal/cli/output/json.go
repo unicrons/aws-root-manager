@@ -3,10 +3,11 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 )
 
 // prints data in JSON format
-func PrintJSON(headers []string, data [][]any) error {
+func PrintJSON(w io.Writer, headers []string, data [][]any) error {
 	// Convert [][]string to a slice of maps for JSON output
 	var jsonData []map[string]any
 	for _, row := range data {
@@ -21,6 +22,6 @@ func PrintJSON(headers []string, data [][]any) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(encodedData))
+	fmt.Fprintln(w, string(encodedData))
 	return nil
 }

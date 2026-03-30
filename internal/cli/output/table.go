@@ -2,6 +2,7 @@ package output
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -26,7 +27,7 @@ var (
 	redStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("1")) // Red
 )
 
-func printTable(headers []string, data [][]any) {
+func printTable(w io.Writer, headers []string, data [][]any) {
 	// Convert data to table rows
 	rows := make([][]string, len(data))
 	for i, row := range data {
@@ -84,7 +85,7 @@ func printTable(headers []string, data [][]any) {
 	}
 
 	// Print the table
-	fmt.Println(t)
+	fmt.Fprintln(w, t)
 }
 
 // Format string array values returning "not present" if empty

@@ -1,14 +1,15 @@
-package service
+package rootmanager
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 
-	"github.com/unicrons/aws-root-manager/pkg/aws"
-	"github.com/unicrons/aws-root-manager/pkg/logger"
+	"github.com/unicrons/aws-root-manager/internal/aws"
 )
 
-func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessStatus, error) {
-	var status = aws.RootAccessStatus{
+func checkRootAccess(ctx context.Context, iam aws.IamClient) (RootAccessStatus, error) {
+	var status = RootAccessStatus{
 		TrustedAccess:             false,
 		RootCredentialsManagement: false,
 		RootSessions:              false,
@@ -16,24 +17,24 @@ func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessSta
 
 	err := iam.CheckOrganizationRootAccess(ctx, true)
 	if err != nil {
-		if err == aws.ErrTrustedAccessNotEnabled {
+		if errors.Is(err, ErrTrustedAccessNotEnabled) {
 			return status, nil
 		}
 		status.TrustedAccess = true
 
-		if err == aws.ErrRootCredentialsManagementNotEnabled {
+		if errors.Is(err, ErrRootCredentialsManagementNotEnabled) {
 			return status, nil
 		}
 		status.RootCredentialsManagement = true
 
-		if err == aws.ErrRootSessionsNotEnabled {
+		if errors.Is(err, ErrRootSessionsNotEnabled) {
 			return status, nil
 		}
 
-		return aws.RootAccessStatus{}, err
+		return RootAccessStatus{}, err
 	}
 
-	status = aws.RootAccessStatus{
+	status = RootAccessStatus{
 		TrustedAccess:             true,
 		RootCredentialsManagement: true,
 		RootSessions:              true,
@@ -42,16 +43,16 @@ func CheckRootAccess(ctx context.Context, iam *aws.IamClient) (aws.RootAccessSta
 	return status, nil
 }
 
-func EnableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.OrganizationsClient, enableSessions bool) (aws.RootAccessStatus, aws.RootAccessStatus, error) {
-	var initStatus, status aws.RootAccessStatus
+func enableRootAccess(ctx context.Context, iam aws.IamClient, org aws.OrganizationsClient, enableSessions bool) (RootAccessStatus, RootAccessStatus, error) {
+	var initStatus, status RootAccessStatus
 
-	initStatus, err := CheckRootAccess(ctx, iam)
+	initStatus, err := checkRootAccess(ctx, iam)
 	if err != nil {
 		return initStatus, status, err
 	}
 
 	if !initStatus.TrustedAccess {
-		logger.Debug("service.EnableRootAccess", "trusted access is disabled")
+		slog.Debug("trusted access is disabled")
 		err := org.EnableAWSServiceAccess(ctx, "iam.amazonaws.com")
 		if err != nil {
 			return initStatus, status, err
@@ -59,7 +60,7 @@ func EnableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.Organiza
 	}
 
 	if !initStatus.RootCredentialsManagement {
-		logger.Debug("service.EnableRootAccess", "root credentials management is disabled")
+		slog.Debug("root credentials management is disabled")
 		err = iam.EnableOrganizationsRootCredentialsManagement(ctx)
 		if err != nil {
 			return initStatus, status, err
@@ -67,7 +68,7 @@ func EnableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.Organiza
 	}
 
 	if !initStatus.RootSessions && enableSessions {
-		logger.Debug("service.EnableRootAccess", "root sessions is disabled")
+		slog.Debug("root sessions is disabled")
 
 		err = iam.EnableOrganizationsRootSessions(ctx)
 		if err != nil {
@@ -75,7 +76,7 @@ func EnableRootAccess(ctx context.Context, iam *aws.IamClient, org *aws.Organiza
 		}
 	}
 
-	status, err = CheckRootAccess(ctx, iam)
+	status, err = checkRootAccess(ctx, iam)
 	if err != nil {
 		return initStatus, status, err
 	}
