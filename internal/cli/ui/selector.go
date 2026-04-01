@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 const AllNonManagementText = "all non management accounts"
@@ -40,7 +40,7 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			m.quit = true
@@ -73,7 +73,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentPage++
 				m.cursor = 0
 			}
-		case " ":
+		case "space":
 			if len(m.filtered) > 0 {
 				currentChoice := m.filtered[m.currentPage*m.pageSize+m.cursor]
 				if _, ok := m.selected[currentChoice]; ok {
@@ -115,7 +115,7 @@ func (m *model) updateFilteredChoices() {
 	m.cursor = 0
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	s := fmt.Sprintf("%s:\n\n", m.question)
 
 	filterText := "Filter: "
@@ -163,7 +163,7 @@ func (m model) View() string {
 
 	s += "\n" + helpStyle.Render(helpTextMultipleChoice)
 
-	return s
+	return tea.NewView(s)
 }
 
 func Prompt(question string, choices []string) ([]int, error) {
