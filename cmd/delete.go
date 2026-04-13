@@ -21,7 +21,6 @@ func Delete(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra
 		Short: "Delete root user credentials",
 		Long:  `Delete root user credentials for specific AWS Organization member accounts.`,
 	}
-	cmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of AWS account IDs to audit (comma-separated). Use \"all\" to audit all accounts.")
 	cmd.AddCommand(deleteSubcommand(newRM, "all", "Delete all existing root user credentials", "Delete all existing root user credentials for specific AWS Organization member accounts."))
 	cmd.AddCommand(deleteSubcommand(newRM, "login", "Delete root user Login Profile", "Delete existing root user Login Profile for specific AWS Organization member accounts."))
 	cmd.AddCommand(deleteSubcommand(newRM, "keys", "Delete root user Access Keys", "Delete existing root user Access Keys for specific AWS Organization member accounts."))
@@ -37,15 +36,18 @@ func deleteSubcommand(newRM func(context.Context) (rootmanager.RootManager, erro
 	if use == "certificates" {
 		credentialType = "certificate"
 	}
-	return &cobra.Command{
+	var accounts []string
+	cmd := &cobra.Command{
 		Use:          use,
 		Short:        short,
 		Long:         long,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDelete(newRM, cmd.OutOrStdout(), accountsFlags, credentialType)
+			return runDelete(newRM, cmd.OutOrStdout(), accounts, credentialType)
 		},
 	}
+	cmd.Flags().StringSliceVarP(&accounts, "accounts", "a", []string{}, "List of AWS account IDs (comma-separated). Use \"all\" to select all accounts.")
+	return cmd
 }
 
 func runDelete(newRM func(context.Context) (rootmanager.RootManager, error), w io.Writer, accountsFlags []string, credentialType string) error {
