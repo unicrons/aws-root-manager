@@ -58,6 +58,8 @@ type StsClient interface {
 type S3Client interface {
 	// ListBuckets returns the names of all buckets owned by the caller.
 	ListBuckets(ctx context.Context) ([]string, error)
+	// GetBucketPolicy returns the bucket policy JSON, or empty string if none exists.
+	GetBucketPolicy(ctx context.Context, bucketName string) (string, error)
 	// DeleteBucketPolicy deletes the bucket policy attached to the given bucket.
 	DeleteBucketPolicy(ctx context.Context, bucketName string) error
 }
@@ -67,6 +69,8 @@ type S3Client interface {
 type SqsClient interface {
 	// ListQueues returns the URLs of all queues owned by the caller.
 	ListQueues(ctx context.Context) ([]string, error)
+	// GetQueuePolicy returns the queue policy JSON, or empty string if none exists.
+	GetQueuePolicy(ctx context.Context, queueUrl string) (string, error)
 	// DeleteQueuePolicy clears the access policy attached to the given queue URL.
 	DeleteQueuePolicy(ctx context.Context, queueUrl string) error
 }

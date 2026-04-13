@@ -59,6 +59,25 @@ func runDeleteS3BucketPolicy(newRM func(context.Context) (rootmanager.RootManage
 		bucketName = buckets[idx]
 	}
 
+	policy, err := rm.GetS3BucketPolicy(ctx, accountId, bucketName)
+	if err != nil {
+		return fmt.Errorf("failed to get bucket policy: %w", err)
+	}
+	if policy == "" {
+		fmt.Fprintln(w, "No bucket policy found.")
+		return nil
+	}
+	fmt.Fprintf(w, "Current bucket policy for %s:\n\n%s\n\n", bucketName, policy)
+
+	confirmed, err := ui.Confirm("Delete this policy?")
+	if err != nil {
+		return err
+	}
+	if !confirmed {
+		fmt.Fprintln(w, "Aborted.")
+		return nil
+	}
+
 	result, err := rm.DeleteS3BucketPolicy(ctx, accountId, bucketName)
 	if err != nil {
 		return err

@@ -47,6 +47,13 @@ func NewRootManager(ctx context.Context) (RootManager, error) {
 	), nil
 }
 
+func (m *manager) GetS3BucketPolicy(ctx context.Context, accountId, bucketName string) (string, error) {
+	if m.sts == nil {
+		return "", errors.New("STS client required for get")
+	}
+	return getS3BucketPolicy(ctx, m.sts, m.s3Factory, accountId, bucketName)
+}
+
 func (m *manager) ListAccountBuckets(ctx context.Context, accountId string) ([]string, error) {
 	if m.sts == nil {
 		return nil, errors.New("STS client required for listing buckets")
@@ -59,6 +66,13 @@ func (m *manager) DeleteS3BucketPolicy(ctx context.Context, accountId, bucketNam
 		return PolicyDeletionResult{}, errors.New("STS client required for delete")
 	}
 	return deleteS3BucketPolicy(ctx, m.sts, m.s3Factory, accountId, bucketName)
+}
+
+func (m *manager) GetSQSQueuePolicy(ctx context.Context, accountId, queueUrl string) (string, error) {
+	if m.sts == nil {
+		return "", errors.New("STS client required for get")
+	}
+	return getSQSQueuePolicy(ctx, m.sts, m.sqsFactory, accountId, queueUrl)
 }
 
 func (m *manager) ListAccountQueues(ctx context.Context, accountId string) ([]string, error) {

@@ -37,6 +37,20 @@ func (c *sqsClient) ListQueues(ctx context.Context) ([]string, error) {
 	return queues, nil
 }
 
+// GetQueuePolicy returns the queue policy JSON string, or empty string if no policy exists.
+func (c *sqsClient) GetQueuePolicy(ctx context.Context, queueUrl string) (string, error) {
+	slog.Debug("getting sqs queue policy", "queue_url", queueUrl)
+
+	output, err := c.client.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		QueueUrl:       aws.String(queueUrl),
+		AttributeNames: []types.QueueAttributeName{types.QueueAttributeNamePolicy},
+	})
+	if err != nil {
+		return "", fmt.Errorf("error getting queue policy for queue %s: %w", queueUrl, err)
+	}
+	return output.Attributes[string(types.QueueAttributeNamePolicy)], nil
+}
+
 func (c *sqsClient) DeleteQueuePolicy(ctx context.Context, queueUrl string) error {
 	slog.Debug("deleting sqs queue policy", "queue_url", queueUrl)
 

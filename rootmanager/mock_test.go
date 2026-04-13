@@ -103,11 +103,16 @@ func (f *mockIamClientFactory) NewIamClient(_ awssdk.Config) aws.IamClient {
 type mockS3Client struct {
 	listBucketsResult  []string
 	listBucketsErr     error
+	getBucketPolResult string
+	getBucketPolErr    error
 	deleteBucketPolErr error
 }
 
 func (m *mockS3Client) ListBuckets(_ context.Context) ([]string, error) {
 	return m.listBucketsResult, m.listBucketsErr
+}
+func (m *mockS3Client) GetBucketPolicy(_ context.Context, _ string) (string, error) {
+	return m.getBucketPolResult, m.getBucketPolErr
 }
 func (m *mockS3Client) DeleteBucketPolicy(_ context.Context, _ string) error {
 	return m.deleteBucketPolErr
@@ -125,11 +130,16 @@ func (f *mockS3ClientFactory) NewS3Client(_ awssdk.Config) aws.S3Client {
 type mockSqsClient struct {
 	listQueuesResult  []string
 	listQueuesErr     error
+	getQueuePolResult string
+	getQueuePolErr    error
 	deleteQueuePolErr error
 }
 
 func (m *mockSqsClient) ListQueues(_ context.Context) ([]string, error) {
 	return m.listQueuesResult, m.listQueuesErr
+}
+func (m *mockSqsClient) GetQueuePolicy(_ context.Context, _ string) (string, error) {
+	return m.getQueuePolResult, m.getQueuePolErr
 }
 func (m *mockSqsClient) DeleteQueuePolicy(_ context.Context, _ string) error {
 	return m.deleteQueuePolErr

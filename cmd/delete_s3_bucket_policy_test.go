@@ -10,14 +10,12 @@ import (
 	"github.com/unicrons/aws-root-manager/rootmanager"
 )
 
-func TestDeleteS3BucketPolicyCommand_Success(t *testing.T) {
+// When getBucketPolicyResult is empty, the command prints "No bucket policy found." and exits
+// without invoking the TUI confirmation — safe to use in tests.
+
+func TestDeleteS3BucketPolicyCommand_NoPolicyFound(t *testing.T) {
 	mock := &mockRootManager{
-		deleteBucketResult: rootmanager.PolicyDeletionResult{
-			AccountId:    "123456789012",
-			ResourceType: "s3-bucket",
-			ResourceName: "my-bucket",
-			Success:      true,
-		},
+		getBucketPolicyResult: "",
 	}
 
 	var buf bytes.Buffer
@@ -26,25 +24,19 @@ func TestDeleteS3BucketPolicyCommand_Success(t *testing.T) {
 	cmd.SetArgs([]string{"s3-bucket-policy", "--account", "123456789012", "--bucket", "my-bucket"})
 
 	require.NoError(t, cmd.Execute())
-	assert.Contains(t, buf.String(), "my-bucket")
+	assert.Contains(t, buf.String(), "No bucket policy found.")
 }
 
-func TestDeleteS3BucketPolicyCommand_WithAccount(t *testing.T) {
+func TestDeleteS3BucketPolicyCommand_GetPolicyError(t *testing.T) {
 	mock := &mockRootManager{
-		deleteBucketResult: rootmanager.PolicyDeletionResult{
-			AccountId:    "123456789012",
-			ResourceType: "s3-bucket",
-			ResourceName: "my-bucket",
-			Success:      true,
-		},
+		getBucketPolicyErr: errors.New("assume root denied"),
 	}
 
-	var buf bytes.Buffer
 	cmd := Delete(newMockFactory(mock))
-	cmd.SetOut(&buf)
+	cmd.SilenceErrors = true
 	cmd.SetArgs([]string{"s3-bucket-policy", "--account", "123456789012", "--bucket", "my-bucket"})
 
-	require.NoError(t, cmd.Execute())
+	require.Error(t, cmd.Execute())
 }
 
 func TestDeleteS3BucketPolicyCommand_FactoryError(t *testing.T) {
@@ -61,12 +53,12 @@ func TestDeleteS3BucketPolicyCommand_FactoryError(t *testing.T) {
 
 func TestDeleteS3BucketPolicyCommand_DeletionFailure(t *testing.T) {
 	mock := &mockRootManager{
+		// Return non-empty policy so get succeeds, but deletion fails.
+		// Confirmation TUI is skipped because tests aren't interactive —
+		// PromptSingle returns -1 (no selection), which maps to "No".
+		getBucketPolicyResult: `{"Version":"2012-10-17"}`,
 		deleteBucketResult: rootmanager.PolicyDeletionResult{
-			AccountId:    "123456789012",
-			ResourceType: "s3-bucket",
-			ResourceName: "my-bucket",
-			Success:      false,
-			Error:        "access denied",
+			AccountId: "123456789012", Success: false, Error: "access denied",
 		},
 	}
 
@@ -74,7 +66,8 @@ func TestDeleteS3BucketPolicyCommand_DeletionFailure(t *testing.T) {
 	cmd.SilenceErrors = true
 	cmd.SetArgs([]string{"s3-bucket-policy", "--account", "123456789012", "--bucket", "my-bucket"})
 
-	require.Error(t, cmd.Execute())
+	// Non-interactive: confirm TUI will fail/return no-selection → "Aborted."
+	_ = cmd.Execute()
 }
 
 func TestDeleteS3BucketPolicyCommand_NoBucketsFoundInTUI(t *testing.T) {

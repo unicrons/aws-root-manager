@@ -58,6 +58,25 @@ func runDeleteSQSQueuePolicy(newRM func(context.Context) (rootmanager.RootManage
 		queueUrl = queues[idx]
 	}
 
+	policy, err := rm.GetSQSQueuePolicy(ctx, accountId, queueUrl)
+	if err != nil {
+		return fmt.Errorf("failed to get queue policy: %w", err)
+	}
+	if policy == "" {
+		fmt.Fprintln(w, "No queue policy found.")
+		return nil
+	}
+	fmt.Fprintf(w, "Current queue policy for %s:\n\n%s\n\n", queueUrl, policy)
+
+	confirmed, err := ui.Confirm("Delete this policy?")
+	if err != nil {
+		return err
+	}
+	if !confirmed {
+		fmt.Fprintln(w, "Aborted.")
+		return nil
+	}
+
 	result, err := rm.DeleteSQSQueuePolicy(ctx, accountId, queueUrl)
 	if err != nil {
 		return err

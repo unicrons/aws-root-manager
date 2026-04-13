@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -30,6 +31,22 @@ func (c *s3Client) ListBuckets(ctx context.Context) ([]string, error) {
 		buckets = append(buckets, aws.ToString(b.Name))
 	}
 	return buckets, nil
+}
+
+// GetBucketPolicy returns the bucket policy JSON string, or empty string if no policy exists.
+func (c *s3Client) GetBucketPolicy(ctx context.Context, bucketName string) (string, error) {
+	slog.Debug("getting s3 bucket policy", "bucket", bucketName)
+
+	output, err := c.client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{
+		Bucket: aws.String(bucketName),
+	})
+	if err != nil {
+		if strings.Contains(err.Error(), "NoSuchBucketPolicy") {
+			return "", nil
+		}
+		return "", fmt.Errorf("error getting bucket policy for bucket %s: %w", bucketName, err)
+	}
+	return aws.ToString(output.Policy), nil
 }
 
 func (c *s3Client) DeleteBucketPolicy(ctx context.Context, bucketName string) error {

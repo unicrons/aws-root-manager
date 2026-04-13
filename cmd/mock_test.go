@@ -20,15 +20,19 @@ type mockRootManager struct {
 	recoveryResult []rootmanager.RecoveryResult
 	recoveryErr    error
 
-	listBucketsResult []string
-	listBucketsErr    error
-	deleteBucketResult rootmanager.PolicyDeletionResult
-	deleteBucketErr    error
+	getBucketPolicyResult string
+	getBucketPolicyErr    error
+	listBucketsResult     []string
+	listBucketsErr        error
+	deleteBucketResult    rootmanager.PolicyDeletionResult
+	deleteBucketErr       error
 
-	listQueuesResult []string
-	listQueuesErr    error
-	deleteQueueResult rootmanager.PolicyDeletionResult
-	deleteQueueErr    error
+	getQueuePolicyResult string
+	getQueuePolicyErr    error
+	listQueuesResult     []string
+	listQueuesErr        error
+	deleteQueueResult    rootmanager.PolicyDeletionResult
+	deleteQueueErr       error
 }
 
 func (m *mockRootManager) CheckRootAccess(_ context.Context) (rootmanager.RootAccessStatus, error) {
@@ -46,11 +50,17 @@ func (m *mockRootManager) DeleteCredentials(_ context.Context, _ []rootmanager.R
 func (m *mockRootManager) RecoverRootPassword(_ context.Context, _ []string) ([]rootmanager.RecoveryResult, error) {
 	return m.recoveryResult, m.recoveryErr
 }
+func (m *mockRootManager) GetS3BucketPolicy(_ context.Context, _, _ string) (string, error) {
+	return m.getBucketPolicyResult, m.getBucketPolicyErr
+}
 func (m *mockRootManager) ListAccountBuckets(_ context.Context, _ string) ([]string, error) {
 	return m.listBucketsResult, m.listBucketsErr
 }
 func (m *mockRootManager) DeleteS3BucketPolicy(_ context.Context, _, _ string) (rootmanager.PolicyDeletionResult, error) {
 	return m.deleteBucketResult, m.deleteBucketErr
+}
+func (m *mockRootManager) GetSQSQueuePolicy(_ context.Context, _, _ string) (string, error) {
+	return m.getQueuePolicyResult, m.getQueuePolicyErr
 }
 func (m *mockRootManager) ListAccountQueues(_ context.Context, _ string) ([]string, error) {
 	return m.listQueuesResult, m.listQueuesErr

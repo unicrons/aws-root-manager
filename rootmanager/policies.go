@@ -15,6 +15,16 @@ const (
 	resourceTypeSqsQueue = "sqs-queue"
 )
 
+func getS3BucketPolicy(ctx context.Context, sts aws.StsClient, factory aws.S3ClientFactory, accountId, bucketName string) (string, error) {
+	slog.Debug("getting s3 bucket policy", "account_id", accountId, "bucket", bucketName)
+
+	cfg, err := sts.GetAssumeRootConfig(ctx, accountId, s3UnlockTaskPolicy)
+	if err != nil {
+		return "", err
+	}
+	return factory.NewS3Client(cfg).GetBucketPolicy(ctx, bucketName)
+}
+
 func listAccountBuckets(ctx context.Context, sts aws.StsClient, factory aws.S3ClientFactory, accountId string) ([]string, error) {
 	slog.Debug("listing account buckets", "account_id", accountId)
 
@@ -47,6 +57,16 @@ func deleteS3BucketPolicy(ctx context.Context, sts aws.StsClient, factory aws.S3
 
 	result.Success = true
 	return result, nil
+}
+
+func getSQSQueuePolicy(ctx context.Context, sts aws.StsClient, factory aws.SqsClientFactory, accountId, queueUrl string) (string, error) {
+	slog.Debug("getting sqs queue policy", "account_id", accountId, "queue_url", queueUrl)
+
+	cfg, err := sts.GetAssumeRootConfig(ctx, accountId, sqsUnlockTaskPolicy)
+	if err != nil {
+		return "", err
+	}
+	return factory.NewSqsClient(cfg).GetQueuePolicy(ctx, queueUrl)
 }
 
 func listAccountQueues(ctx context.Context, sts aws.StsClient, factory aws.SqsClientFactory, accountId string) ([]string, error) {

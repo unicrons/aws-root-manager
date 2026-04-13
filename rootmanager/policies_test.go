@@ -9,6 +9,60 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// --- getS3BucketPolicy ---
+
+func TestGetS3BucketPolicy_Success(t *testing.T) {
+	s3 := &mockS3Client{getBucketPolResult: `{"Version":"2012-10-17"}`}
+	factory := &mockS3ClientFactory{client: s3}
+	sts := &mockStsClient{}
+
+	got, err := getS3BucketPolicy(context.Background(), sts, factory, "123456789012", "my-bucket")
+	require.NoError(t, err)
+	assert.Equal(t, `{"Version":"2012-10-17"}`, got)
+}
+
+func TestGetS3BucketPolicy_NoPolicyReturnsEmpty(t *testing.T) {
+	s3 := &mockS3Client{getBucketPolResult: ""}
+	factory := &mockS3ClientFactory{client: s3}
+	sts := &mockStsClient{}
+
+	got, err := getS3BucketPolicy(context.Background(), sts, factory, "123456789012", "my-bucket")
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
+func TestGetS3BucketPolicy_STSError(t *testing.T) {
+	stsErr := errors.New("assume root denied")
+	sts := &mockStsClient{assumeRootErr: stsErr}
+	factory := &mockS3ClientFactory{client: &mockS3Client{}}
+
+	_, err := getS3BucketPolicy(context.Background(), sts, factory, "123456789012", "my-bucket")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, stsErr)
+}
+
+// --- getSQSQueuePolicy ---
+
+func TestGetSQSQueuePolicy_Success(t *testing.T) {
+	sqs := &mockSqsClient{getQueuePolResult: `{"Version":"2012-10-17"}`}
+	factory := &mockSqsClientFactory{client: sqs}
+	sts := &mockStsClient{}
+
+	got, err := getSQSQueuePolicy(context.Background(), sts, factory, "123456789012", "https://sqs/q1")
+	require.NoError(t, err)
+	assert.Equal(t, `{"Version":"2012-10-17"}`, got)
+}
+
+func TestGetSQSQueuePolicy_STSError(t *testing.T) {
+	stsErr := errors.New("assume root denied")
+	sts := &mockStsClient{assumeRootErr: stsErr}
+	factory := &mockSqsClientFactory{client: &mockSqsClient{}}
+
+	_, err := getSQSQueuePolicy(context.Background(), sts, factory, "123456789012", "https://sqs/q1")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, stsErr)
+}
+
 // --- listAccountBuckets ---
 
 func TestListAccountBuckets_Success(t *testing.T) {
