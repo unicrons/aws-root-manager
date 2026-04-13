@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -66,15 +67,18 @@ func runDeleteSQSQueuePolicy(newRM func(context.Context) (rootmanager.RootManage
 		fmt.Fprintln(w, "No queue policy found.")
 		return nil
 	}
-	fmt.Fprintf(w, "Current queue policy for %s:\n\n%s\n\n", queueUrl, policy)
+	if outputFlag == "table" {
+		fmt.Fprintf(w, "Current queue policy for %s:\n\n", queueUrl)
+		output.RenderPolicy(w, policy)
 
-	confirmed, err := ui.Confirm("Delete this policy?")
-	if err != nil {
-		return err
-	}
-	if !confirmed {
-		fmt.Fprintln(w, "Aborted.")
-		return nil
+		confirmed, err := ui.Confirm("Delete this policy?")
+		if err != nil {
+			return err
+		}
+		if !confirmed {
+			fmt.Fprintln(w, "Aborted.")
+			return nil
+		}
 	}
 
 	result, err := rm.DeleteSQSQueuePolicy(ctx, accountId, queueUrl)
@@ -87,8 +91,15 @@ func runDeleteSQSQueuePolicy(newRM func(context.Context) (rootmanager.RootManage
 		return fmt.Errorf("failed to delete queue policy for queue %s", result.ResourceName)
 	}
 
-	headers := []string{"Account", "ResourceType", "Queue", "Status"}
-	data := [][]any{{result.AccountId, result.ResourceType, result.ResourceName, "deleted"}}
+	var headers []string
+	var data [][]any
+	if outputFlag == "table" {
+		headers = []string{"Account", "ResourceType", "Queue", "Status"}
+		data = [][]any{{result.AccountId, result.ResourceType, result.ResourceName, "deleted"}}
+	} else {
+		headers = []string{"Account", "ResourceType", "Queue", "Status", "Policy"}
+		data = [][]any{{result.AccountId, result.ResourceType, result.ResourceName, "deleted", json.RawMessage(policy)}}
+	}
 	output.HandleOutput(w, outputFlag, headers, data)
 	return nil
 }
