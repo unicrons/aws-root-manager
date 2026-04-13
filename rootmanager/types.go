@@ -31,3 +31,12 @@ type DeletionResult struct {
 	Success        bool   // Whether deletion was successful
 	Error          string // Error message if deletion failed (empty if Success=true)
 }
+
+// PolicyDeletionResult represents the result of a resource policy deletion operation.
+type PolicyDeletionResult struct {
+	AccountId    string // AWS account ID
+	ResourceType string // Type of resource ("s3-bucket", "sqs-queue")
+	ResourceName string // Bucket name or queue URL
+	Success      bool   // Whether deletion was successful
+	Error        string // Error message if deletion failed (empty if Success=true)
+}

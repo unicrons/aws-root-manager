@@ -58,6 +58,40 @@ func SelectTargetAccounts(ctx context.Context, org aws.OrganizationsClient, acco
 	return extractSelectedAccounts(orgAccounts, selectedIndexes), nil
 }
 
+// SelectSingleTargetAccount resolves exactly one account ID from the flag or
+// a single-select TUI. Unlike SelectTargetAccounts it has no "all" option.
+// org is only used when accountsFlag is empty.
+func SelectSingleTargetAccount(ctx context.Context, org aws.OrganizationsClient, accountsFlag []string) (string, error) {
+	slog.Debug("processing single target account", "accounts_flag", accountsFlag)
+
+	if len(accountsFlag) == 1 && accountsFlag[0] != AllAccountsOption {
+		return accountsFlag[0], nil
+	}
+	if len(accountsFlag) > 1 {
+		return "", fmt.Errorf("this command operates on a single account; got %d", len(accountsFlag))
+	}
+
+	orgAccounts, err := aws.GetNonManagementOrganizationAccounts(ctx, org)
+	if err != nil {
+		return "", fmt.Errorf("error fetching organization accounts: %w", err)
+	}
+
+	var choices []string
+	for _, account := range orgAccounts {
+		choices = append(choices, fmt.Sprintf("%s - %s", account.AccountID, account.Name))
+	}
+
+	idx, err := PromptSingle("Please select the AWS account", choices)
+	if err != nil {
+		return "", err
+	}
+	if idx < 0 {
+		return "", fmt.Errorf("no account selected")
+	}
+
+	return orgAccounts[idx].AccountID, nil
+}
+
 // Checks if all option is selected
 func allSelected(selectedIndexes []int) bool {
 	for _, index := range selectedIndexes {

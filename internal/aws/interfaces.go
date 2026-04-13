@@ -53,6 +53,24 @@ type StsClient interface {
 	GetAssumeRootConfig(ctx context.Context, accountId, taskPolicyName string) (awssdk.Config, error)
 }
 
+// S3Client defines the interface for S3 operations scoped to a single account.
+// This interface enables mocking and dependency injection for testing.
+type S3Client interface {
+	// ListBuckets returns the names of all buckets owned by the caller.
+	ListBuckets(ctx context.Context) ([]string, error)
+	// DeleteBucketPolicy deletes the bucket policy attached to the given bucket.
+	DeleteBucketPolicy(ctx context.Context, bucketName string) error
+}
+
+// SqsClient defines the interface for SQS operations scoped to a single account.
+// This interface enables mocking and dependency injection for testing.
+type SqsClient interface {
+	// ListQueues returns the URLs of all queues owned by the caller.
+	ListQueues(ctx context.Context) ([]string, error)
+	// DeleteQueuePolicy clears the access policy attached to the given queue URL.
+	DeleteQueuePolicy(ctx context.Context, queueUrl string) error
+}
+
 // OrganizationsClient defines the interface for AWS Organizations operations.
 // This interface enables mocking and dependency injection for testing.
 type OrganizationsClient interface {

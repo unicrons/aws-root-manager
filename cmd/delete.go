@@ -27,6 +27,8 @@ func Delete(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra
 	cmd.AddCommand(deleteSubcommand(newRM, "keys", "Delete root user Access Keys", "Delete existing root user Access Keys for specific AWS Organization member accounts."))
 	cmd.AddCommand(deleteSubcommand(newRM, "mfa", "Deactivate root user MFA Devices", "Deactivate existing root user MFA Devices for specific AWS Organization member accounts."))
 	cmd.AddCommand(deleteSubcommand(newRM, "certificates", "Delete root user Signin Certificates", "Delete existing root user Signing Certificates for specific AWS Organization member accounts."))
+	cmd.AddCommand(DeleteS3BucketPolicy(newRM))
+	cmd.AddCommand(DeleteSQSQueuePolicy(newRM))
 	return cmd
 }
 

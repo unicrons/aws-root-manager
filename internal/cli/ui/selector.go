@@ -19,6 +19,7 @@ var (
 	cursorStyle            = lipgloss.NewStyle().Foreground(pink)
 
 	helpTextMultipleChoice = "↑/↓/←/→: Navigate • Space: Select • Enter: Confirm"
+	helpTextSingleChoice   = "↑/↓/←/→: Navigate • Enter: Select"
 )
 
 type model struct {
@@ -32,6 +33,7 @@ type model struct {
 	quit          bool
 	pageSize      int
 	currentPage   int
+	single        bool // when true, enter selects the current cursor item and quits
 }
 
 func (m model) Init() tea.Cmd {
@@ -46,6 +48,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quit = true
 			return m, tea.Quit
 		case "enter":
+			if m.single {
+				if len(m.filtered) > 0 {
+					chosen := m.filtered[m.currentPage*m.pageSize+m.cursor]
+					m.selected = map[string]struct{}{chosen: {}}
+					return m, tea.Quit
+				}
+				return m, nil
+			}
 			if len(m.selected) > 0 {
 				return m, tea.Quit
 			}
@@ -74,6 +84,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor = 0
 			}
 		case "space":
+			if m.single {
+				return m, nil
+			}
 			if len(m.filtered) > 0 {
 				currentChoice := m.filtered[m.currentPage*m.pageSize+m.cursor]
 				if _, ok := m.selected[currentChoice]; ok {
@@ -138,6 +151,11 @@ func (m model) View() tea.View {
 				cursor = cursorStyle.Render(">")
 			}
 
+			if m.single {
+				s += fmt.Sprintf("%s %s\n", cursor, choice)
+				continue
+			}
+
 			checked := " "
 			if _, ok := m.selected[choice]; ok {
 				checked = cursorStyle.Render("x")
@@ -157,33 +175,52 @@ func (m model) View() tea.View {
 		}
 	}
 
-	if len(m.selected) == 0 {
+	if !m.single && len(m.selected) == 0 {
 		s += "\n" + helpStyle.Render("Please select at least one item")
 	}
 
-	s += "\n" + helpStyle.Render(helpTextMultipleChoice)
+	helpText := helpTextMultipleChoice
+	if m.single {
+		helpText = helpTextSingleChoice
+	}
+	s += "\n" + helpStyle.Render(helpText)
 
 	return tea.NewView(s)
 }
 
+// Prompt shows a multi-select TUI and returns the original indexes of the
+// chosen items.
 func Prompt(question string, choices []string) ([]int, error) {
+	return runPrompt(question, choices, false)
+}
+
+// PromptSingle shows a single-select TUI and returns the original index of the
+// chosen item, or -1 if the user quit without selecting.
+func PromptSingle(question string, choices []string) (int, error) {
+	indexes, err := runPrompt(question, choices, true)
+	if err != nil {
+		return -1, err
+	}
+	if len(indexes) == 0 {
+		return -1, nil
+	}
+	return indexes[0], nil
+}
+
+func runPrompt(question string, choices []string, single bool) ([]int, error) {
+	allChoicesMap := make(map[int]string, len(choices))
+	for i, choice := range choices {
+		allChoicesMap[i] = choice
+	}
+
 	m := model{
-		question: question,
-		choices:  choices,
-		filtered: choices,
-		filter:   "",
-		cursor:   0,
-		selected: make(map[string]struct{}),
-		allChoicesMap: func() map[int]string {
-			m := make(map[int]string)
-			for i, choice := range choices {
-				m[i] = choice
-			}
-			return m
-		}(),
-		quit:        false,
-		pageSize:    10,
-		currentPage: 0,
+		question:      question,
+		choices:       choices,
+		filtered:      choices,
+		selected:      make(map[string]struct{}),
+		allChoicesMap: allChoicesMap,
+		pageSize:      10,
+		single:        single,
 	}
 
 	p := tea.NewProgram(m)
