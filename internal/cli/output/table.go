@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/table"
 	"github.com/charmbracelet/x/term"
 )
 
@@ -17,10 +17,7 @@ var (
 			BorderForeground(lipgloss.Color("8")) // Gray
 	headerStyle = lipgloss.NewStyle().
 			Padding(0, 1).
-			Bold(true).
-			BorderStyle(baseStyle.GetBorderStyle()).
-			BorderBottom(true).
-			BorderForeground(baseStyle.GetBorderBottomForeground())
+			Bold(true)
 	rowStyle = lipgloss.NewStyle().
 			Padding(0, 1)
 	greenStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // Green
