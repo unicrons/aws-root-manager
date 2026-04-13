@@ -57,6 +57,7 @@ func Audit(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.
 			for i, acc := range audit {
 				if acc.Error != "" {
 					skipped++
+					slog.Error("audit failed for account", "account_id", auditAccounts[i], "error", acc.Error)
 					continue
 				}
 				data = append(data, []any{
