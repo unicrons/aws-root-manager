@@ -2,8 +2,10 @@ package aws
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 )
@@ -26,6 +28,18 @@ func WithCredentials(creds *aws.Credentials) configOption {
 func WithDefaultRegion(region string) configOption {
 	return func(o *config.LoadOptions) error {
 		o.DefaultRegion = region
+		return nil
+	}
+}
+
+func WithRetry(maxAttempts int, maxBackoff time.Duration) configOption {
+	return func(o *config.LoadOptions) error {
+		o.Retryer = func() aws.Retryer {
+			return retry.NewStandard(func(s *retry.StandardOptions) {
+				s.MaxAttempts = maxAttempts
+				s.MaxBackoff = maxBackoff
+			})
+		}
 		return nil
 	}
 }
