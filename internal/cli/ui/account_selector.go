@@ -10,7 +10,7 @@ import (
 
 const (
 	AllAccountsOption       = "all"
-	AllAccountsSelectorText = "all non management accounts"
+	AllAccountsSelectorText = "All Accounts"
 )
 
 // SelectTargetAccounts handles interactive account selection or returns accounts based on flags.
