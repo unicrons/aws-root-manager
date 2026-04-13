@@ -3,6 +3,7 @@ package rootmanager
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/unicrons/aws-root-manager/internal/aws"
 )
@@ -28,9 +29,15 @@ func NewRootManager(ctx context.Context) (RootManager, error) {
 	if err != nil {
 		return nil, err
 	}
+	// AssumeRoot is subject to strict AWS rate limits, so the STS client uses
+	// a more aggressive retry policy than the default.
+	stsCfg, err := aws.LoadAWSConfig(ctx, aws.WithRetry(10, 30*time.Second))
+	if err != nil {
+		return nil, err
+	}
 	return newManager(
 		aws.NewIamClient(cfg),
-		aws.NewStsClient(cfg),
+		aws.NewStsClient(stsCfg),
 		aws.NewOrganizationsClient(cfg),
 		&aws.DefaultIamClientFactory{},
 	), nil
