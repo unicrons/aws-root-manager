@@ -15,7 +15,6 @@ import (
 )
 
 func Recovery(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra.Command {
-	var skip bool
 	cmd := &cobra.Command{
 		Use:   "recovery",
 		Short: "Allow root password recovery",
@@ -45,7 +44,7 @@ func Recovery(newRM func(context.Context) (rootmanager.RootManager, error)) *cob
 			}
 			slog.Debug("selected accounts", "accounts", strings.Join(targetAccounts, ", "))
 
-			if outputFlag == "table" && !skip {
+			if !skipFlag {
 				confirmed, err := ui.Confirm(fmt.Sprintf("Restore root password for %d account(s)?", len(targetAccounts)))
 				if err != nil {
 					return err
@@ -90,6 +89,6 @@ func Recovery(newRM func(context.Context) (rootmanager.RootManager, error)) *cob
 		},
 	}
 	cmd.PersistentFlags().StringSliceVarP(&accountsFlags, "accounts", "a", []string{}, "List of tarjet AWS account IDs (comma-separated). Use \"all\" to select all accounts.")
-	cmd.Flags().BoolVar(&skip, "skip", false, "Skip the confirmation prompt")
+	cmd.Flags().BoolVar(&skipFlag, "yes", false, "Skip the confirmation prompt")
 	return cmd
 }

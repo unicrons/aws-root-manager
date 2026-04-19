@@ -28,7 +28,7 @@ func Delete(newRM func(context.Context) (rootmanager.RootManager, error)) *cobra
 	cmd.AddCommand(deleteSubcommand(newRM, "certificates", "Delete root user Signin Certificates", "Delete existing root user Signing Certificates for specific AWS Organization member accounts."))
 	cmd.AddCommand(DeleteS3BucketPolicy(newRM))
 	cmd.AddCommand(DeleteSQSQueuePolicy(newRM))
-	cmd.PersistentFlags().BoolVar(&skipFlag, "skip", false, "Skip the confirmation prompt")
+	cmd.PersistentFlags().BoolVar(&skipFlag, "yes", false, "Skip the confirmation prompt")
 	return cmd
 }
 
@@ -72,7 +72,7 @@ func runDelete(newRM func(context.Context) (rootmanager.RootManager, error), w i
 	}
 	slog.Debug("selected accounts", "accounts", strings.Join(auditAccounts, ", "))
 
-	if outputFlag == "table" && !skipFlag {
+	if !skipFlag {
 		confirmed, err := ui.Confirm(fmt.Sprintf("Delete %s root credentials for %d account(s)?", credentialType, len(auditAccounts)))
 		if err != nil {
 			return err
