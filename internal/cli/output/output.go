@@ -1,6 +1,7 @@
 package output
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -29,7 +30,12 @@ func dataToString(data [][]any) [][]string {
 	for i, row := range data {
 		convertedRow := make([]string, len(row))
 		for j, cell := range row {
-			convertedRow[j] = fmt.Sprintf("%v", cell)
+			switch v := cell.(type) {
+			case json.RawMessage:
+				convertedRow[j] = string(v)
+			default:
+				convertedRow[j] = fmt.Sprintf("%v", cell)
+			}
 		}
 		convertedData[i] = convertedRow
 	}

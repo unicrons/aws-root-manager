@@ -10,16 +10,18 @@ import (
 
 // manager implements RootManager using AWS clients.
 type manager struct {
-	iam     aws.IamClient
-	sts     aws.StsClient
-	org     aws.OrganizationsClient
-	factory aws.IamClientFactory
+	iam        aws.IamClient
+	sts        aws.StsClient
+	org        aws.OrganizationsClient
+	factory    aws.IamClientFactory
+	s3Factory  aws.S3ClientFactory
+	sqsFactory aws.SqsClientFactory
 }
 
-// newManager returns a RootManager that uses the given AWS clients and factory.
+// newManager returns a RootManager that uses the given AWS clients and factories.
 // sts and org may be nil for callers that only use CheckRootAccess.
-func newManager(iam aws.IamClient, sts aws.StsClient, org aws.OrganizationsClient, factory aws.IamClientFactory) RootManager {
-	return &manager{iam: iam, sts: sts, org: org, factory: factory}
+func newManager(iam aws.IamClient, sts aws.StsClient, org aws.OrganizationsClient, factory aws.IamClientFactory, s3Factory aws.S3ClientFactory, sqsFactory aws.SqsClientFactory) RootManager {
+	return &manager{iam: iam, sts: sts, org: org, factory: factory, s3Factory: s3Factory, sqsFactory: sqsFactory}
 }
 
 // NewRootManager returns a RootManager configured from the default AWS environment.
@@ -40,7 +42,51 @@ func NewRootManager(ctx context.Context) (RootManager, error) {
 		aws.NewStsClient(stsCfg),
 		aws.NewOrganizationsClient(cfg),
 		&aws.DefaultIamClientFactory{},
+		&aws.DefaultS3ClientFactory{},
+		&aws.DefaultSqsClientFactory{},
 	), nil
+}
+
+func (m *manager) GetS3BucketPolicy(ctx context.Context, accountId, bucketName string) (string, error) {
+	if m.sts == nil {
+		return "", errors.New("STS client required for get")
+	}
+	return getS3BucketPolicy(ctx, m.sts, m.s3Factory, accountId, bucketName)
+}
+
+func (m *manager) ListAccountBuckets(ctx context.Context, accountId string) ([]string, error) {
+	if m.sts == nil {
+		return nil, errors.New("STS client required for listing buckets")
+	}
+	return listAccountBuckets(ctx, m.sts, m.s3Factory, accountId)
+}
+
+func (m *manager) DeleteS3BucketPolicy(ctx context.Context, accountId, bucketName string) (PolicyDeletionResult, error) {
+	if m.sts == nil {
+		return PolicyDeletionResult{}, errors.New("STS client required for delete")
+	}
+	return deleteS3BucketPolicy(ctx, m.sts, m.s3Factory, accountId, bucketName)
+}
+
+func (m *manager) GetSQSQueuePolicy(ctx context.Context, accountId, queueUrl string) (string, error) {
+	if m.sts == nil {
+		return "", errors.New("STS client required for get")
+	}
+	return getSQSQueuePolicy(ctx, m.sts, m.sqsFactory, accountId, queueUrl)
+}
+
+func (m *manager) ListAccountQueues(ctx context.Context, accountId string) ([]string, error) {
+	if m.sts == nil {
+		return nil, errors.New("STS client required for listing queues")
+	}
+	return listAccountQueues(ctx, m.sts, m.sqsFactory, accountId)
+}
+
+func (m *manager) DeleteSQSQueuePolicy(ctx context.Context, accountId, queueUrl string) (PolicyDeletionResult, error) {
+	if m.sts == nil {
+		return PolicyDeletionResult{}, errors.New("STS client required for delete")
+	}
+	return deleteSQSQueuePolicy(ctx, m.sts, m.sqsFactory, accountId, queueUrl)
 }
 
 func (m *manager) AuditAccounts(ctx context.Context, accountIds []string) ([]RootCredentials, error) {

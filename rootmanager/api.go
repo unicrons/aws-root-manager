@@ -38,4 +38,28 @@ type RootManager interface {
 	// This triggers AWS to send password reset emails to the account's root email address.
 	// Returns a slice of RecoveryResult showing the outcome for each account.
 	RecoverRootPassword(ctx context.Context, accountIds []string) ([]RecoveryResult, error)
+
+	// GetS3BucketPolicy returns the JSON policy attached to the given bucket using
+	// AssumeRoot with the S3UnlockBucketPolicy task policy. Returns empty string if none.
+	GetS3BucketPolicy(ctx context.Context, accountId, bucketName string) (string, error)
+
+	// ListAccountBuckets returns the names of all S3 buckets owned by the given account
+	// using AssumeRoot with the S3UnlockBucketPolicy task policy.
+	ListAccountBuckets(ctx context.Context, accountId string) ([]string, error)
+
+	// DeleteS3BucketPolicy removes the bucket policy from the given bucket using
+	// AssumeRoot in the bucket's owning account with the S3UnlockBucketPolicy task policy.
+	DeleteS3BucketPolicy(ctx context.Context, accountId, bucketName string) (PolicyDeletionResult, error)
+
+	// GetSQSQueuePolicy returns the JSON policy attached to the given queue URL using
+	// AssumeRoot with the SQSUnlockQueuePolicy task policy. Returns empty string if none.
+	GetSQSQueuePolicy(ctx context.Context, accountId, queueUrl string) (string, error)
+
+	// ListAccountQueues returns the URLs of all SQS queues owned by the given account
+	// using AssumeRoot with the SQSUnlockQueuePolicy task policy.
+	ListAccountQueues(ctx context.Context, accountId string) ([]string, error)
+
+	// DeleteSQSQueuePolicy clears the access policy from the given queue URL using
+	// AssumeRoot in the queue's owning account with the SQSUnlockQueuePolicy task policy.
+	DeleteSQSQueuePolicy(ctx context.Context, accountId, queueUrl string) (PolicyDeletionResult, error)
 }
