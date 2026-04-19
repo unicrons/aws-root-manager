@@ -71,16 +71,16 @@ func runDeleteS3BucketPolicy(newRM func(context.Context) (rootmanager.RootManage
 	if outputFlag == "table" {
 		fmt.Fprintf(w, "Current bucket policy for %s:\n\n", bucketName)
 		output.RenderPolicy(w, policy)
+	}
 
-		if !skipFlag {
-			confirmed, err := ui.Confirm("Delete this policy?")
-			if err != nil {
-				return err
-			}
-			if !confirmed {
-				fmt.Fprintln(w, "Aborted.")
-				return nil
-			}
+	if !skipFlag {
+		confirmed, err := ui.Confirm("Delete this policy?")
+		if err != nil {
+			return err
+		}
+		if !confirmed {
+			fmt.Fprintln(w, "Aborted.")
+			return nil
 		}
 	}
 
