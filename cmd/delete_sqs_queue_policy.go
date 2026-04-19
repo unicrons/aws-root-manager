@@ -71,13 +71,15 @@ func runDeleteSQSQueuePolicy(newRM func(context.Context) (rootmanager.RootManage
 		fmt.Fprintf(w, "Current queue policy for %s:\n\n", queueUrl)
 		output.RenderPolicy(w, policy)
 
-		confirmed, err := ui.Confirm("Delete this policy?")
-		if err != nil {
-			return err
-		}
-		if !confirmed {
-			fmt.Fprintln(w, "Aborted.")
-			return nil
+		if !skipFlag {
+			confirmed, err := ui.Confirm("Delete this policy?")
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				fmt.Fprintln(w, "Aborted.")
+				return nil
+			}
 		}
 	}
 
