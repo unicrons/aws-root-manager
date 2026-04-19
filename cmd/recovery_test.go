@@ -20,7 +20,7 @@ func TestRecoveryCommand_Success(t *testing.T) {
 	var buf bytes.Buffer
 	cmd := Recovery(newMockFactory(mock))
 	cmd.SetOut(&buf)
-	cmd.SetArgs([]string{"--accounts", "123456789012"})
+	cmd.SetArgs([]string{"--accounts", "123456789012", "--skip"})
 
 	require.NoError(t, cmd.Execute())
 	assert.NotEmpty(t, buf.String())
@@ -36,7 +36,7 @@ func TestRecoveryCommand_AlreadyExists(t *testing.T) {
 	var buf bytes.Buffer
 	cmd := Recovery(newMockFactory(mock))
 	cmd.SetOut(&buf)
-	cmd.SetArgs([]string{"--accounts", "123456789012"})
+	cmd.SetArgs([]string{"--accounts", "123456789012", "--skip"})
 
 	require.NoError(t, cmd.Execute())
 	assert.Contains(t, buf.String(), "already exists")
@@ -65,7 +65,7 @@ func TestRecoveryCommand_RecoveryFailure(t *testing.T) {
 	cmd := Recovery(newMockFactory(mock))
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
-	cmd.SetArgs([]string{"--accounts", "123456789012"})
+	cmd.SetArgs([]string{"--accounts", "123456789012", "--skip"})
 
 	require.Error(t, cmd.Execute())
 }

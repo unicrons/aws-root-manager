@@ -12,6 +12,7 @@ import (
 var (
 	accountsFlags []string
 	outputFlag    string
+	skipFlag      bool
 )
 
 var rootCmd = &cobra.Command{

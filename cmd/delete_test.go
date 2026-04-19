@@ -23,7 +23,7 @@ func TestDeleteCommand_Success(t *testing.T) {
 	var buf bytes.Buffer
 	cmd := Delete(newMockFactory(mock))
 	cmd.SetOut(&buf)
-	cmd.SetArgs([]string{"all", "--accounts", "123456789012"})
+	cmd.SetArgs([]string{"all", "--accounts", "123456789012", "--skip"})
 
 	require.NoError(t, cmd.Execute())
 	assert.NotEmpty(t, buf.String())
@@ -42,7 +42,7 @@ func TestDeleteCommand_CertificatesSubcommand(t *testing.T) {
 	var buf bytes.Buffer
 	cmd := Delete(newMockFactory(mock))
 	cmd.SetOut(&buf)
-	cmd.SetArgs([]string{"certificates", "--accounts", "123456789012"})
+	cmd.SetArgs([]string{"certificates", "--accounts", "123456789012", "--skip"})
 
 	require.NoError(t, cmd.Execute())
 	assert.NotEmpty(t, buf.String())
@@ -72,7 +72,7 @@ func TestDeleteCommand_DeleteFailure(t *testing.T) {
 
 	cmd := Delete(newMockFactory(mock))
 	cmd.SilenceErrors = true
-	cmd.SetArgs([]string{"all", "--accounts", "123456789012"})
+	cmd.SetArgs([]string{"all", "--accounts", "123456789012", "--skip"})
 
 	require.Error(t, cmd.Execute())
 }
